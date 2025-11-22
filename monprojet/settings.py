@@ -68,9 +68,12 @@ WSGI_APPLICATION = 'monprojet.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # Configuration pour Railway (PostgreSQL) et développement local (SQLite)
+import dj_database_url
 default_db_url = 'sqlite:///' + str(BASE_DIR / 'db.sqlite3')
+
+DATABASE_URL = os.environ.get('DATABASE_URL', default_db_url)
 DATABASES = {
-    'default': config('DATABASE_URL', default=default_db_url, cast=db_url),
+    'default': dj_database_url.parse(DATABASE_URL)
 }
 
 
