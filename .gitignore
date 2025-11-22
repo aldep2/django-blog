@@ -33,6 +33,9 @@ ENV/
 .env
 .venv
 
+# Fichiers statiques collectés
+staticfiles/
+
 # Fichiers média uploadés
 media/
 
