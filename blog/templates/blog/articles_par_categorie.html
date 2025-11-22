@@ -1,0 +1,150 @@
+{% extends 'blog/liste_articles.html' %}
+
+{% block title %}{{ categorie.nom }} - Mon Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Contenu principal -->
+    <div class="col-lg-8">
+        <!-- En-tête de catégorie -->
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <span style="color: {{ categorie.couleur }}; font-size: 1.5em;">●</span>
+                    {{ categorie.nom }}
+                </h1>
+                {% if categorie.description %}
+                <p class="card-text">{{ categorie.description }}</p>
+                {% endif %}
+                <a href="{% url 'blog:liste_articles' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Tous les articles
+                </a>
+            </div>
+        </div>
+
+        {% if articles %}
+            <!-- Liste des articles -->
+            {% for article in articles %}
+            <div class="card article-card mb-4">
+                {% if article.image %}
+                <img src="{{ article.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ article.titre }}">
+                {% endif %}
+                
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{{ article.get_absolute_url }}" class="text-decoration-none">
+                            {{ article.titre }}
+                        </a>
+                    </h5>
+                    
+                    <p class="card-text text-muted">{{ article.extrait }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> {{ article.auteur.username }}
+                            <i class="fas fa-calendar ms-2"></i> {{ article.date_publication|date:"d M Y" }}
+                            <i class="fas fa-eye ms-2"></i> {{ article.vues }} vue{{ article.vues|pluralize }}
+                        </small>
+                        <a href="{{ article.get_absolute_url }}" class="btn btn-primary btn-sm">
+                            Lire la suite <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            {% if articles.has_other_pages %}
+            <nav aria-label="Navigation des articles">
+                <ul class="pagination justify-content-center">
+                    {% if articles.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i> Précédent
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in articles.paginator.page_range %}
+                        {% if articles.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if articles.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.next_page_number }}">
+                                Suivant <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <!-- Aucun article dans cette catégorie -->
+            <div class="text-center py-5">
+                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">Aucun article dans cette catégorie</h3>
+                <p class="text-muted">La catégorie "{{ categorie.nom }}" ne contient pas encore d'articles publiés.</p>
+                <a href="{% url 'blog:liste_articles' %}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Voir tous les articles
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+            <!-- Autres catégories -->
+            {% if categories %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tags"></i> Autres catégories</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'blog:liste_articles' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-list"></i> Toutes les catégories
+                        </a>
+                        {% for cat in categories %}
+                            {% if cat.id != categorie.id %}
+                            <a href="{% url 'blog:articles_par_categorie' cat.id %}" class="list-group-item list-group-item-action">
+                                <span style="color: {{ cat.couleur }};">●</span> {{ cat.nom }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Informations sur la catégorie -->
+            <div class="card">
+                <div class="card-header text-white" style="background-color: {{ categorie.couleur }};">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> {{ categorie.nom }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if categorie.description %}
+                        <p class="card-text">{{ categorie.description }}</p>
+                    {% else %}
+                        <p class="card-text text-muted">Aucune description disponible pour cette catégorie.</p>
+                    {% endif %}
+                    <hr>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-newspaper"></i> 
+                        {{ articles.paginator.count }} article{{ articles.paginator.count|pluralize }} dans cette catégorie
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

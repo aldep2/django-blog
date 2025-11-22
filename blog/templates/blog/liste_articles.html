@@ -1,0 +1,164 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{% if categorie_selectionnee %}Articles - Catégorie{% else %}Tous les articles{% endif %} - Mon Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Contenu principal -->
+    <div class="col-lg-8">
+        <!-- En-tête avec recherche -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i class="fas fa-newspaper"></i> 
+                {% if query %}
+                    Résultats pour "{{ query }}"
+                {% elif categorie_selectionnee %}
+                    Articles de la catégorie
+                {% else %}
+                    Derniers articles
+                {% endif %}
+            </h1>
+            
+            <!-- Formulaire de recherche -->
+            <form method="GET" class="d-flex">
+                <input type="text" name="q" class="form-control me-2" placeholder="Rechercher..." value="{{ query|default:'' }}">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+
+        {% if articles %}
+            <!-- Liste des articles -->
+            {% for article in articles %}
+            <div class="card article-card mb-4">
+                {% if article.image %}
+                <img src="{{ article.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ article.titre }}">
+                {% endif %}
+                
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title">
+                            <a href="{{ article.get_absolute_url }}" class="text-decoration-none">
+                                {{ article.titre }}
+                            </a>
+                        </h5>
+                        {% if article.categorie %}
+                        <span class="badge categorie-badge" style="background-color: {{ article.categorie.couleur }};">
+                            {{ article.categorie.nom }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="card-text text-muted">{{ article.extrait }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> {{ article.auteur.username }}
+                            <i class="fas fa-calendar ms-2"></i> {{ article.date_publication|date:"d M Y" }}
+                            <i class="fas fa-eye ms-2"></i> {{ article.vues }} vue{{ article.vues|pluralize }}
+                        </small>
+                        <a href="{{ article.get_absolute_url }}" class="btn btn-primary btn-sm">
+                            Lire la suite <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            {% if articles.has_other_pages %}
+            <nav aria-label="Navigation des articles">
+                <ul class="pagination justify-content-center">
+                    {% if articles.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if categorie_selectionnee %}&categorie={{ categorie_selectionnee }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Précédent
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in articles.paginator.page_range %}
+                        {% if articles.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if categorie_selectionnee %}&categorie={{ categorie_selectionnee }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if articles.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if categorie_selectionnee %}&categorie={{ categorie_selectionnee }}{% endif %}">
+                                Suivant <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <!-- Aucun article trouvé -->
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">Aucun article trouvé</h3>
+                {% if query %}
+                    <p class="text-muted">Aucun résultat pour votre recherche "{{ query }}".</p>
+                    <a href="{% url 'blog:liste_articles' %}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Voir tous les articles
+                    </a>
+                {% else %}
+                    <p class="text-muted">Aucun article n'a encore été publié.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+            <!-- Catégories -->
+            {% if categories %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tags"></i> Catégories</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'blog:liste_articles' %}" class="list-group-item list-group-item-action {% if not categorie_selectionnee %}active{% endif %}">
+                            <i class="fas fa-list"></i> Toutes les catégories
+                        </a>
+                        {% for categorie in categories %}
+                        <a href="{% url 'blog:articles_par_categorie' categorie.id %}" class="list-group-item list-group-item-action {% if categorie.id|stringformat:'s' == categorie_selectionnee %}active{% endif %}">
+                            <span style="color: {{ categorie.couleur }};">●</span> {{ categorie.nom }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Informations -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> À propos</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Bienvenue sur mon blog ! Vous trouverez ici mes articles sur diverses thématiques.
+                        N'hésitez pas à laisser des commentaires et à partager vos avis.
+                    </p>
+                    <hr>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-code"></i> Propulsé par Django
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
