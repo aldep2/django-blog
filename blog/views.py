@@ -1,6 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q
 from .models import Article, Categorie, Commentaire
@@ -135,3 +138,54 @@ def ajouter_commentaire(request, slug):
             messages.error(request, 'Erreur dans le formulaire de commentaire.')
     
     return redirect('blog:article_detail', slug=slug)
+
+
+# Vues d'authentification
+def user_login(request):
+    """Vue pour la connexion des utilisateurs"""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        if username and password:
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Bienvenue {user.username} !')
+                next_url = request.GET.get('next', 'blog:liste_articles')
+                return redirect(next_url)
+            else:
+                messages.error(request, 'Nom d\'utilisateur ou mot de passe incorrect.')
+        else:
+            messages.error(request, 'Veuillez remplir tous les champs.')
+    
+    return render(request, 'blog/auth/login.html')
+
+
+def user_signup(request):
+    """Vue pour l'inscription des utilisateurs"""
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Compte créé avec succès pour {username} ! Vous pouvez maintenant vous connecter.')
+            return redirect('blog:login')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field.title()}: {error}')
+    else:
+        form = UserCreationForm()
+    
+    context = {'form': form}
+    return render(request, 'blog/auth/signup.html', context)
+
+
+def user_logout(request):
+    """Vue pour la déconnexion des utilisateurs"""
+    username = request.user.username if request.user.is_authenticated else None
+    logout(request)
+    if username:
+        messages.success(request, f'À bientôt {username} !')
+    return redirect('blog:liste_articles')

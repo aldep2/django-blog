@@ -15,4 +15,9 @@ urlpatterns = [
     
     # Ajouter un commentaire (pour AJAX si besoin)
     path('article/<slug:slug>/commentaire/', views.ajouter_commentaire, name='ajouter_commentaire'),
+    
+    # URLs d'authentification
+    path('login/', views.user_login, name='login'),
+    path('signup/', views.user_signup, name='signup'),
+    path('logout/', views.user_logout, name='logout'),
 ]

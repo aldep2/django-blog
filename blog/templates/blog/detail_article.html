@@ -69,7 +69,8 @@
             {% else %}
             <div class="alert alert-info">
                 <i class="fas fa-info-circle"></i>
-                Vous devez être <a href="#" class="alert-link">connecté</a> pour laisser un commentaire.
+                Vous devez être <a href="{% url 'blog:login' %}" class="alert-link">connecté</a> pour laisser un commentaire.
+                <a href="{% url 'blog:signup' %}" class="alert-link">Pas encore de compte ?</a>
             </div>
             {% endif %}
 
