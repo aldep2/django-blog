@@ -1619,6 +1619,1454 @@ Total: 2 livres (1 disponible, 1 emprunté)
                 }
             )
         
+        # Cours 3: Python Expert
+        cours_expert, created = Cours.objects.get_or_create(
+            slug='python-expert',
+            defaults={
+                'titre': 'Python Expert',
+                'description': 'Maîtrisez les concepts avancés de Python : décorateurs, générateurs, métaclasses, programmation asynchrone et optimisation de performances.',
+                'niveau': 'expert',
+                'duree_estimee': 20,
+                'ordre': 3,
+                'actif': True
+            }
+        )
+        
+        if created:
+            self.stdout.write(
+                self.style.SUCCESS(f'Cours créé: {cours_expert.titre}')
+            )
+        
+        # Chapitres pour le cours expert
+        if created or not cours_expert.chapitres.exists():
+            # Chapitre 1: Décorateurs et métaprogrammation
+            Chapitre.objects.get_or_create(
+                cours=cours_expert,
+                slug='decorateurs-metaprogrammation',
+                defaults={
+                    'titre': 'Décorateurs et Métaprogrammation',
+                    'ordre': 0,
+                    'contenu': '''# Décorateurs et Métaprogrammation Python
+
+## 🎭 Qu'est-ce qu'un décorateur ?
+
+Un **décorateur** est une fonction qui modifie le comportement d'une autre fonction. C'est un concept puissant pour ajouter des fonctionnalités sans modifier le code original.
+
+## 🔧 Décorateur simple
+
+```python
+def mon_decorateur(func):
+    def wrapper():
+        print("Quelque chose avant la fonction")
+        func()
+        print("Quelque chose après la fonction")
+    return wrapper
+
+@mon_decorateur
+def dire_bonjour():
+    print("Bonjour !")
+
+# Équivalent à:
+# dire_bonjour = mon_decorateur(dire_bonjour)
+
+dire_bonjour()
+# Sortie:
+# Quelque chose avant la fonction
+# Bonjour !
+# Quelque chose après la fonction
+```
+
+## ⏱️ Décorateur de mesure du temps
+
+```python
+import time
+import functools
+
+def mesurer_temps(func):
+    @functools.wraps(func)  # Préserve les métadonnées de la fonction
+    def wrapper(*args, **kwargs):
+        debut = time.time()
+        resultat = func(*args, **kwargs)
+        fin = time.time()
+        print(f"{func.__name__} a pris {fin - debut:.4f} secondes")
+        return resultat
+    return wrapper
+
+@mesurer_temps
+def calcul_lent():
+    time.sleep(1)
+    return sum(range(1000000))
+
+resultat = calcul_lent()  # Affiche le temps d'exécution
+```
+
+## 🔐 Décorateur d'authentification
+
+```python
+def authentification_requise(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        utilisateur = kwargs.get('utilisateur')
+        if not utilisateur or not utilisateur.get('connecte', False):
+            print("Erreur: Authentification requise")
+            return None
+        return func(*args, **kwargs)
+    return wrapper
+
+@authentification_requise
+def voir_profil(utilisateur=None):
+    return f"Profil de {utilisateur['nom']}"
+
+# Utilisation
+user_connecte = {'nom': 'Alice', 'connecte': True}
+user_non_connecte = {'nom': 'Bob', 'connecte': False}
+
+print(voir_profil(utilisateur=user_connecte))      # Fonctionne
+print(voir_profil(utilisateur=user_non_connecte))  # Erreur
+```
+
+## 🎛️ Décorateurs avec paramètres
+
+```python
+def retry(max_tentatives=3, delai=1):
+    def decorateur(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for tentative in range(max_tentatives):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if tentative == max_tentatives - 1:
+                        raise e
+                    print(f"Tentative {tentative + 1} échouée: {e}")
+                    time.sleep(delai)
+        return wrapper
+    return decorateur
+
+@retry(max_tentatives=3, delai=0.5)
+def operation_fragile():
+    import random
+    if random.random() < 0.7:  # 70% de chance d'échouer
+        raise Exception("Opération échouée")
+    return "Succès !"
+```
+
+## 🏭 Décorateurs de classe
+
+```python
+def singleton(classe):
+    """Décorateur qui transforme une classe en singleton"""
+    instances = {}
+    
+    @functools.wraps(classe)
+    def get_instance(*args, **kwargs):
+        if classe not in instances:
+            instances[classe] = classe(*args, **kwargs)
+        return instances[classe]
+    
+    return get_instance
+
+@singleton
+class DatabaseConnection:
+    def __init__(self):
+        print("Création de la connexion à la base de données")
+        self.connected = True
+
+# Test du singleton
+db1 = DatabaseConnection()  # Crée l'instance
+db2 = DatabaseConnection()  # Retourne la même instance
+print(db1 is db2)  # True
+```
+
+## 📊 Property et descripteurs
+
+```python
+class Temperature:
+    def __init__(self, celsius=0):
+        self._celsius = celsius
+    
+    @property
+    def celsius(self):
+        """Getter pour les degrés Celsius"""
+        return self._celsius
+    
+    @celsius.setter
+    def celsius(self, valeur):
+        """Setter avec validation"""
+        if valeur < -273.15:
+            raise ValueError("Température en dessous du zéro absolu")
+        self._celsius = valeur
+    
+    @property
+    def fahrenheit(self):
+        """Conversion automatique en Fahrenheit"""
+        return self._celsius * 9/5 + 32
+    
+    @fahrenheit.setter
+    def fahrenheit(self, valeur):
+        """Setter pour Fahrenheit qui met à jour Celsius"""
+        self.celsius = (valeur - 32) * 5/9
+
+# Utilisation
+temp = Temperature(25)
+print(f"{temp.celsius}°C = {temp.fahrenheit}°F")
+
+temp.fahrenheit = 100
+print(f"{temp.celsius}°C = {temp.fahrenheit}°F")
+```
+
+## 🔄 Métaclasses (très avancé)
+
+```python
+class AutoStringMeta(type):
+    """Métaclasse qui ajoute automatiquement __str__ à toutes les classes"""
+    def __new__(cls, name, bases, attrs):
+        # Ajouter automatiquement une méthode __str__
+        if '__str__' not in attrs:
+            attrs['__str__'] = lambda self: f"Instance de {name}"
+        
+        return super().__new__(cls, name, bases, attrs)
+
+class MaClasse(metaclass=AutoStringMeta):
+    def __init__(self, valeur):
+        self.valeur = valeur
+
+obj = MaClasse(42)
+print(obj)  # "Instance de MaClasse"
+```
+
+## 🎯 Décorateurs intégrés utiles
+
+### @lru_cache - Cache LRU
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def fibonacci_optimise(n):
+    if n < 2:
+        return n
+    return fibonacci_optimise(n-1) + fibonacci_optimise(n-2)
+
+print(fibonacci_optimise(100))  # Très rapide grâce au cache
+```
+
+### @dataclass - Classes de données
+```python
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class Produit:
+    nom: str
+    prix: float
+    categories: List[str] = field(default_factory=list)
+    
+    def prix_avec_tva(self, tva=0.20):
+        return self.prix * (1 + tva)
+
+produit = Produit("Laptop", 999.99, ["informatique", "bureau"])
+print(produit)  # Représentation automatique
+print(produit.prix_avec_tva())
+```
+
+## 💡 Bonnes pratiques
+
+1. **Utilisez functools.wraps** pour préserver les métadonnées
+2. **Gérez *args et **kwargs** pour la flexibilité
+3. **Documentez vos décorateurs** clairement
+4. **Testez avec et sans décorateurs**
+5. **Évitez les décorateurs trop complexes**
+
+Les décorateurs sont un outil puissant pour écrire du code plus propre et plus réutilisable !''',
+                    'code_exemple': '''# Exemple complet : Système de cache et logging avancé
+
+import functools
+import time
+import json
+from datetime import datetime
+from typing import Any, Dict, Callable
+
+class CacheManager:
+    """Gestionnaire de cache avancé avec TTL"""
+    
+    def __init__(self):
+        self._cache: Dict[str, Dict[str, Any]] = {}
+    
+    def get(self, key: str) -> Any:
+        if key in self._cache:
+            data = self._cache[key]
+            if time.time() < data['expire']:
+                return data['value']
+            else:
+                del self._cache[key]
+        return None
+    
+    def set(self, key: str, value: Any, ttl: int = 300):
+        """Définit une valeur dans le cache avec TTL en secondes"""
+        self._cache[key] = {
+            'value': value,
+            'expire': time.time() + ttl,
+            'created': datetime.now().isoformat()
+        }
+    
+    def clear(self):
+        """Vide le cache"""
+        self._cache.clear()
+    
+    def stats(self):
+        """Retourne les statistiques du cache"""
+        return {
+            'entries': len(self._cache),
+            'keys': list(self._cache.keys())
+        }
+
+# Instance globale du cache
+cache_manager = CacheManager()
+
+def cache_with_ttl(ttl: int = 300):
+    """Décorateur de cache avec Time To Live"""
+    def decorateur(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Créer une clé unique basée sur le nom de la fonction et les arguments
+            cache_key = f"{func.__name__}:{hash(str(args) + str(sorted(kwargs.items())))}"
+            
+            # Vérifier le cache
+            cached_result = cache_manager.get(cache_key)
+            if cached_result is not None:
+                print(f"🎯 Cache HIT pour {func.__name__}")
+                return cached_result
+            
+            # Exécuter la fonction et mettre en cache
+            print(f"⚡ Cache MISS pour {func.__name__} - Exécution...")
+            result = func(*args, **kwargs)
+            cache_manager.set(cache_key, result, ttl)
+            
+            return result
+        return wrapper
+    return decorateur
+
+def log_calls(log_args: bool = True, log_result: bool = True):
+    """Décorateur de logging avancé"""
+    def decorateur(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            log_info = {
+                'function': func.__name__,
+                'timestamp': timestamp,
+                'module': func.__module__
+            }
+            
+            if log_args and (args or kwargs):
+                log_info['arguments'] = {
+                    'args': args,
+                    'kwargs': kwargs
+                }
+            
+            print(f"📝 [{timestamp}] Appel de {func.__name__}")
+            
+            try:
+                start_time = time.time()
+                result = func(*args, **kwargs)
+                execution_time = time.time() - start_time
+                
+                log_info['status'] = 'SUCCESS'
+                log_info['execution_time'] = f"{execution_time:.4f}s"
+                
+                if log_result:
+                    log_info['result'] = str(result)[:100]  # Limiter la taille
+                
+                print(f"✅ {func.__name__} terminé en {execution_time:.4f}s")
+                return result
+                
+            except Exception as e:
+                log_info['status'] = 'ERROR'
+                log_info['error'] = str(e)
+                print(f"❌ Erreur dans {func.__name__}: {e}")
+                raise
+                
+        return wrapper
+    return decorateur
+
+def rate_limit(max_calls: int, period: int = 60):
+    """Décorateur de limitation de débit"""
+    call_times = []
+    
+    def decorateur(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            now = time.time()
+            
+            # Nettoyer les appels anciens
+            call_times[:] = [t for t in call_times if now - t < period]
+            
+            if len(call_times) >= max_calls:
+                raise Exception(f"Rate limit dépassé: {max_calls} appels par {period}s")
+            
+            call_times.append(now)
+            return func(*args, **kwargs)
+            
+        return wrapper
+    return decorateur
+
+# Exemples d'utilisation des décorateurs
+
+@cache_with_ttl(ttl=60)  # Cache pendant 1 minute
+@log_calls(log_args=True, log_result=True)
+def fibonacci_lent(n: int) -> int:
+    """Calcul de Fibonacci volontairement lent pour démontrer le cache"""
+    if n <= 1:
+        return n
+    time.sleep(0.1)  # Simulation d'une opération lente
+    return fibonacci_lent(n-1) + fibonacci_lent(n-2)
+
+@rate_limit(max_calls=3, period=10)  # Max 3 appels par 10 secondes
+@log_calls(log_args=False, log_result=True)
+def api_call_simulee(endpoint: str) -> dict:
+    """Simulation d'un appel API avec limitation de débit"""
+    time.sleep(0.5)  # Simulation latence réseau
+    return {
+        'endpoint': endpoint,
+        'status': 200,
+        'data': f"Données de {endpoint}",
+        'timestamp': datetime.now().isoformat()
+    }
+
+@cache_with_ttl(ttl=30)
+def calcul_complexe(x: int, y: int) -> float:
+    """Simulation d'un calcul complexe"""
+    print(f"Exécution du calcul complexe avec {x} et {y}")
+    time.sleep(1)  # Simulation d'un calcul long
+    return (x ** 2 + y ** 2) ** 0.5
+
+def demo_decorateurs():
+    """Démonstration des décorateurs en action"""
+    print("=== DÉMONSTRATION DES DÉCORATEURS ===\\n")
+    
+    # Test du cache
+    print("1. Test du système de cache:")
+    print(f"Premier appel: {calcul_complexe(3, 4)}")
+    print(f"Deuxième appel (depuis le cache): {calcul_complexe(3, 4)}")
+    print(f"Statistiques du cache: {cache_manager.stats()}\\n")
+    
+    # Test du rate limiting
+    print("2. Test du rate limiting:")
+    try:
+        for i in range(5):
+            result = api_call_simulee(f"users/{i}")
+            print(f"Appel {i+1} réussi")
+    except Exception as e:
+        print(f"Rate limit atteint: {e}\\n")
+    
+    # Test du logging avec Fibonacci
+    print("3. Test du cache avec Fibonacci:")
+    print(f"fibonacci_lent(5) première fois:")
+    result1 = fibonacci_lent(5)
+    print(f"Résultat: {result1}")
+    
+    print(f"\\nfibonacci_lent(5) deuxième fois (cache):")
+    result2 = fibonacci_lent(5)
+    print(f"Résultat: {result2}")
+
+if __name__ == "__main__":
+    demo_decorateurs()''',
+                    'exercice': '''## 🎯 Exercice Expert : Système de décorateurs pour API REST
+
+**Objectif :** Créer un ensemble de décorateurs pour sécuriser et optimiser une API REST
+
+### 1. Décorateurs à implémenter
+
+**a) @api_key_required**
+```python
+def api_key_required(valid_keys=None):
+    """
+    Vérifie qu'une clé API valide est fournie
+    valid_keys: liste des clés API valides
+    """
+    pass
+
+# Usage:
+@api_key_required(['abc123', 'xyz789'])
+def get_user_data(user_id, api_key=None):
+    return f"Données utilisateur {user_id}"
+```
+
+**b) @validate_json**
+```python
+def validate_json(schema):
+    """
+    Valide que les données JSON respectent un schéma
+    schema: dictionnaire définissant les champs requis
+    """
+    pass
+
+# Usage:
+@validate_json({'name': str, 'age': int, 'email': str})
+def create_user(data):
+    return f"Utilisateur {data['name']} créé"
+```
+
+**c) @cache_response**
+```python
+def cache_response(ttl=300, key_func=None):
+    """
+    Met en cache les réponses avec TTL personnalisable
+    key_func: fonction pour générer la clé de cache
+    """
+    pass
+```
+
+**d) @require_role**
+```python
+def require_role(*required_roles):
+    """
+    Vérifie que l'utilisateur a l'un des rôles requis
+    """
+    pass
+
+# Usage:
+@require_role('admin', 'moderator')
+def delete_user(user_id, current_user=None):
+    return f"Utilisateur {user_id} supprimé"
+```
+
+### 2. Contexte de l'exercice
+
+Créez une simulation d'API REST avec ces décorateurs :
+
+```python
+# Données de test
+VALID_API_KEYS = ['dev123', 'prod456', 'test789']
+
+USERS_DB = [
+    {'id': 1, 'name': 'Alice', 'role': 'admin', 'email': 'alice@example.com'},
+    {'id': 2, 'name': 'Bob', 'role': 'user', 'email': 'bob@example.com'},
+    {'id': 3, 'name': 'Charlie', 'role': 'moderator', 'email': 'charlie@example.com'}
+]
+
+# Endpoints à protéger
+@api_key_required(VALID_API_KEYS)
+@cache_response(ttl=60)
+def get_users(api_key=None):
+    """Récupérer tous les utilisateurs"""
+    pass
+
+@api_key_required(VALID_API_KEYS)
+@require_role('admin')
+@validate_json({'name': str, 'email': str, 'role': str})
+def create_user(data, api_key=None, current_user=None):
+    """Créer un nouvel utilisateur"""
+    pass
+```
+
+### 3. Fonctionnalités bonus
+
+**a) Décorateur de monitoring**
+```python
+@monitor_performance
+def slow_endpoint():
+    """Surveille les performances et alerte si > 2 secondes"""
+    pass
+```
+
+**b) Décorateur d'audit**
+```python
+@audit_log
+def sensitive_operation(data, current_user=None):
+    """Log toutes les opérations sensibles"""
+    pass
+```
+
+**c) Décorateur de retry avec backoff**
+```python
+@retry_with_backoff(max_retries=3, backoff_factor=2)
+def unreliable_external_api():
+    """Retry automatique avec délai exponentiel"""
+    pass
+```
+
+### 4. Tests à créer
+
+```python
+def test_decorators():
+    # Test API key
+    assert get_users(api_key='dev123') is not None
+    
+    try:
+        get_users(api_key='invalid')
+        assert False, "Devrait lever une exception"
+    except Exception:
+        pass
+    
+    # Test validation JSON
+    valid_data = {'name': 'Test', 'email': 'test@test.com', 'role': 'user'}
+    invalid_data = {'name': 'Test'}  # email manquant
+    
+    # Test rôles
+    admin_user = {'role': 'admin'}
+    user_user = {'role': 'user'}
+    
+    # ... plus de tests
+```
+
+### 5. Exemple d'utilisation complète
+
+```python
+def simulate_api_requests():
+    print("=== SIMULATION API REST ===")
+    
+    # Requête valide
+    try:
+        users = get_users(api_key='dev123')
+        print(f"✅ Utilisateurs récupérés: {len(users)}")
+    except Exception as e:
+        print(f"❌ Erreur: {e}")
+    
+    # Requête avec clé invalide
+    try:
+        users = get_users(api_key='invalid')
+    except Exception as e:
+        print(f"❌ Clé API invalide: {e}")
+    
+    # Création d'utilisateur (admin requis)
+    admin_user = {'role': 'admin', 'name': 'Admin'}
+    new_user_data = {
+        'name': 'Nouvel Utilisateur',
+        'email': 'nouveau@example.com',
+        'role': 'user'
+    }
+    
+    try:
+        result = create_user(
+            data=new_user_data,
+            api_key='dev123',
+            current_user=admin_user
+        )
+        print(f"✅ Utilisateur créé: {result}")
+    except Exception as e:
+        print(f"❌ Erreur création: {e}")
+```
+
+### 6. Critères d'évaluation
+
+- **Sécurité** : Validation correcte des permissions
+- **Performance** : Cache efficace et rate limiting
+- **Robustesse** : Gestion d'erreurs complète
+- **Flexibilité** : Décorateurs configurables
+- **Lisibilité** : Code clair et bien documenté
+
+Cet exercice teste votre maîtrise des décorateurs avancés et des concepts de sécurité API !'''
+                }
+            )
+            
+            # Chapitre 2: Générateurs et itérateurs
+            Chapitre.objects.get_or_create(
+                cours=cours_expert,
+                slug='generateurs-iterateurs',
+                defaults={
+                    'titre': 'Générateurs et Itérateurs',
+                    'ordre': 1,
+                    'contenu': '''# Générateurs et Itérateurs Python
+
+## 🔄 Qu'est-ce qu'un itérateur ?
+
+Un **itérateur** est un objet qui permet de parcourir une séquence d'éléments un par un, sans charger tous les éléments en mémoire simultanément.
+
+## 📝 Protocole d'itération
+
+```python
+class MonIterateur:
+    def __init__(self, max_val):
+        self.max_val = max_val
+        self.current = 0
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.current < self.max_val:
+            self.current += 1
+            return self.current
+        raise StopIteration
+
+# Utilisation
+for nombre in MonIterateur(5):
+    print(nombre)  # Affiche 1, 2, 3, 4, 5
+```
+
+## ⚡ Générateurs : la syntaxe simple
+
+Les **générateurs** sont une façon élégante de créer des itérateurs avec `yield`.
+
+```python
+def compter_jusqu_a(n):
+    """Générateur qui compte de 1 à n"""
+    i = 1
+    while i <= n:
+        yield i  # Pause ici et retourne i
+        i += 1
+
+# Utilisation
+for nombre in compter_jusqu_a(3):
+    print(nombre)
+# Affiche: 1, 2, 3
+
+# Le générateur peut être réutilisé
+gen = compter_jusqu_a(3)
+print(next(gen))  # 1
+print(next(gen))  # 2
+print(next(gen))  # 3
+# print(next(gen))  # StopIteration
+```
+
+## 🚀 Avantages des générateurs
+
+### Économie mémoire
+```python
+# ❌ Liste normale - charge tout en mémoire
+def nombres_carres_liste(n):
+    return [i**2 for i in range(n)]
+
+# ✅ Générateur - un élément à la fois
+def nombres_carres_gen(n):
+    for i in range(n):
+        yield i**2
+
+# Comparaison mémoire
+import sys
+liste = nombres_carres_liste(1000000)
+print(f"Liste: {sys.getsizeof(liste)} bytes")
+
+gen = nombres_carres_gen(1000000)
+print(f"Générateur: {sys.getsizeof(gen)} bytes")
+```
+
+### Évaluation paresseuse (lazy evaluation)
+```python
+def fibonacci():
+    """Générateur infini de nombres de Fibonacci"""
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+# Prendre seulement les 10 premiers
+fib = fibonacci()
+premiers_dix = [next(fib) for _ in range(10)]
+print(premiers_dix)  # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+```
+
+## 🔧 Générateurs avec send() et close()
+
+```python
+def calculatrice():
+    """Générateur qui agit comme une calculatrice"""
+    resultat = 0
+    while True:
+        operation = yield resultat
+        if operation is None:
+            continue
+        
+        if operation[0] == '+':
+            resultat += operation[1]
+        elif operation[0] == '-':
+            resultat -= operation[1]
+        elif operation[0] == '*':
+            resultat *= operation[1]
+        elif operation[0] == 'reset':
+            resultat = 0
+
+# Utilisation
+calc = calculatrice()
+next(calc)  # Démarrer le générateur
+
+print(calc.send(('+', 10)))  # 10
+print(calc.send(('*', 2)))   # 20
+print(calc.send(('-', 5)))   # 15
+print(calc.send(('reset', 0)))  # 0
+```
+
+## 📊 Expressions génératrices
+
+```python
+# Générateur inline (generator expression)
+carres = (x**2 for x in range(10))
+print(type(carres))  # <class 'generator'>
+
+# Utilisation avec fonctions built-in
+print(sum(x**2 for x in range(10)))  # Somme des carrés
+
+# Pipeline de générateurs
+def nombres():
+    for i in range(100):
+        yield i
+
+def pairs(source):
+    for item in source:
+        if item % 2 == 0:
+            yield item
+
+def carres(source):
+    for item in source:
+        yield item ** 2
+
+# Chaînage élégant
+pipeline = carres(pairs(nombres()))
+premiers_cinq = [next(pipeline) for _ in range(5)]
+print(premiers_cinq)  # [0, 4, 16, 36, 64]
+```
+
+## 🔄 yield from - Délégation de générateurs
+
+```python
+def gen1():
+    yield 1
+    yield 2
+    yield 3
+
+def gen2():
+    yield 'a'
+    yield 'b'
+    yield 'c'
+
+def combine_generators():
+    yield from gen1()  # Délègue à gen1
+    yield from gen2()  # Puis à gen2
+    yield 'fin'
+
+for item in combine_generators():
+    print(item)
+# Affiche: 1, 2, 3, a, b, c, fin
+```
+
+## 📁 Générateurs pour traitement de fichiers
+
+```python
+def lire_fichier_par_chunks(nom_fichier, taille_chunk=1024):
+    """Générateur pour lire un gros fichier par morceaux"""
+    with open(nom_fichier, 'r', encoding='utf-8') as f:
+        while True:
+            chunk = f.read(taille_chunk)
+            if not chunk:
+                break
+            yield chunk
+
+def compter_mots_gros_fichier(nom_fichier):
+    """Compte les mots dans un gros fichier sans tout charger"""
+    compteur = 0
+    for chunk in lire_fichier_par_chunks(nom_fichier):
+        compteur += len(chunk.split())
+    return compteur
+
+def filtrer_lignes(nom_fichier, mot_cle):
+    """Générateur qui filtre les lignes contenant un mot-clé"""
+    with open(nom_fichier, 'r', encoding='utf-8') as f:
+        for ligne in f:
+            if mot_cle in ligne:
+                yield ligne.strip()
+```
+
+## 🌐 Générateurs pour scraping web
+
+```python
+def paginer_api(url_base, max_pages=None):
+    """Générateur pour paginer une API REST"""
+    page = 1
+    while max_pages is None or page <= max_pages:
+        url = f"{url_base}?page={page}"
+        # response = requests.get(url)  # Simulation
+        # data = response.json()
+        
+        # Simulation de données
+        data = {
+            'items': [f'item_{page}_{i}' for i in range(3)],
+            'has_next': page < 5
+        }
+        
+        for item in data['items']:
+            yield item
+        
+        if not data.get('has_next', False):
+            break
+        page += 1
+
+# Utilisation
+for item in paginer_api('https://api.example.com/items', max_pages=3):
+    print(item)
+```
+
+## 🔍 Générateurs avancés avec état
+
+```python
+class StatefulGenerator:
+    """Générateur avec état persistant"""
+    
+    def __init__(self, start=0):
+        self.value = start
+        self.history = []
+    
+    def counter(self):
+        while True:
+            self.history.append(self.value)
+            yield self.value
+            self.value += 1
+    
+    def get_stats(self):
+        return {
+            'current': self.value,
+            'history_length': len(self.history),
+            'sum': sum(self.history)
+        }
+
+# Utilisation
+gen_obj = StatefulGenerator(10)
+counter = gen_obj.counter()
+
+print(next(counter))  # 10
+print(next(counter))  # 11
+print(next(counter))  # 12
+print(gen_obj.get_stats())  # Stats avec historique
+```
+
+## ⚡ Performance : générateurs vs listes
+
+```python
+import time
+import memory_profiler
+
+def benchmark_performance():
+    """Compare performance générateur vs liste"""
+    
+    # Test mémoire
+    def process_liste(n):
+        return sum([x**2 for x in range(n)])
+    
+    def process_gen(n):
+        return sum(x**2 for x in range(n))
+    
+    # Test vitesse
+    n = 1000000
+    
+    start = time.time()
+    result_liste = process_liste(n)
+    time_liste = time.time() - start
+    
+    start = time.time()
+    result_gen = process_gen(n)
+    time_gen = time.time() - start
+    
+    print(f"Liste: {time_liste:.4f}s - Résultat: {result_liste}")
+    print(f"Générateur: {time_gen:.4f}s - Résultat: {result_gen}")
+    
+    # Les deux donnent le même résultat, mais le générateur utilise moins de mémoire
+```
+
+## 🎯 Cas d'usage idéaux pour les générateurs
+
+1. **Traitement de gros fichiers**
+2. **Pagination d'APIs**
+3. **Pipelines de données**
+4. **Séquences infinies**
+5. **Parsing de flux de données**
+6. **Algorithmes de recherche**
+
+Les générateurs sont essentiels pour écrire du Python efficace en mémoire !''',
+                    'code_exemple': '''# Exemple complet : Pipeline de traitement de données avec générateurs
+
+import json
+import csv
+import time
+import random
+from typing import Generator, Dict, Any, List
+from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
+
+@dataclass
+class LogEntry:
+    timestamp: datetime
+    level: str
+    message: str
+    user_id: int
+    ip_address: str
+    endpoint: str
+    response_time: float
+
+class DataPipeline:
+    """Pipeline de traitement de données utilisant des générateurs"""
+    
+    def __init__(self):
+        self.processed_count = 0
+        self.errors_count = 0
+    
+    def generate_sample_logs(self, count: int = 1000) -> Generator[Dict[str, Any], None, None]:
+        """Générateur de logs d'exemple pour simulation"""
+        levels = ['INFO', 'WARNING', 'ERROR', 'DEBUG']
+        endpoints = ['/api/users', '/api/orders', '/api/products', '/login', '/logout']
+        messages = ['Request processed', 'Database query', 'User action', 'System error']
+        
+        start_time = datetime.now() - timedelta(days=7)
+        
+        for i in range(count):
+            timestamp = start_time + timedelta(
+                seconds=random.randint(0, 7 * 24 * 60 * 60)
+            )
+            
+            yield {
+                'timestamp': timestamp.isoformat(),
+                'level': random.choice(levels),
+                'message': random.choice(messages),
+                'user_id': random.randint(1, 1000),
+                'ip_address': f"192.168.1.{random.randint(1, 255)}",
+                'endpoint': random.choice(endpoints),
+                'response_time': round(random.uniform(0.01, 2.0), 3)
+            }
+    
+    def parse_log_data(self, raw_logs: Generator) -> Generator[LogEntry, None, None]:
+        """Parse les données de log brutes en objets LogEntry"""
+        for log_dict in raw_logs:
+            try:
+                log_entry = LogEntry(
+                    timestamp=datetime.fromisoformat(log_dict['timestamp']),
+                    level=log_dict['level'],
+                    message=log_dict['message'],
+                    user_id=log_dict['user_id'],
+                    ip_address=log_dict['ip_address'],
+                    endpoint=log_dict['endpoint'],
+                    response_time=log_dict['response_time']
+                )
+                yield log_entry
+                self.processed_count += 1
+                
+            except (KeyError, ValueError) as e:
+                print(f"Erreur de parsing: {e}")
+                self.errors_count += 1
+                continue
+    
+    def filter_by_level(self, logs: Generator[LogEntry, None, None], 
+                       levels: List[str]) -> Generator[LogEntry, None, None]:
+        """Filtre les logs par niveau"""
+        for log in logs:
+            if log.level in levels:
+                yield log
+    
+    def filter_by_response_time(self, logs: Generator[LogEntry, None, None], 
+                              min_time: float = 0.0) -> Generator[LogEntry, None, None]:
+        """Filtre les logs par temps de réponse minimum"""
+        for log in logs:
+            if log.response_time >= min_time:
+                yield log
+    
+    def group_by_endpoint(self, logs: Generator[LogEntry, None, None]) -> Generator[Dict[str, List[LogEntry]], None, None]:
+        """Groupe les logs par endpoint"""
+        current_batch = {}
+        batch_size = 100
+        count = 0
+        
+        for log in logs:
+            endpoint = log.endpoint
+            if endpoint not in current_batch:
+                current_batch[endpoint] = []
+            
+            current_batch[endpoint].append(log)
+            count += 1
+            
+            # Yield par batch pour éviter de charger trop en mémoire
+            if count >= batch_size:
+                yield current_batch
+                current_batch = {}
+                count = 0
+        
+        # Yield le dernier batch s'il n'est pas vide
+        if current_batch:
+            yield current_batch
+    
+    def calculate_stats(self, log_groups: Generator) -> Generator[Dict[str, Any], None, None]:
+        """Calcule les statistiques pour chaque groupe d'endpoints"""
+        for batch in log_groups:
+            stats = {}
+            
+            for endpoint, logs in batch.items():
+                if not logs:
+                    continue
+                
+                response_times = [log.response_time for log in logs]
+                error_count = sum(1 for log in logs if log.level == 'ERROR')
+                
+                stats[endpoint] = {
+                    'total_requests': len(logs),
+                    'avg_response_time': sum(response_times) / len(response_times),
+                    'max_response_time': max(response_times),
+                    'min_response_time': min(response_times),
+                    'error_rate': error_count / len(logs) * 100,
+                    'unique_users': len(set(log.user_id for log in logs))
+                }
+            
+            yield stats
+    
+    def save_to_json(self, stats_gen: Generator, filename: str = 'stats.json'):
+        """Sauvegarde les statistiques en JSON"""
+        all_stats = {}
+        
+        for batch_stats in stats_gen:
+            for endpoint, stats in batch_stats.items():
+                if endpoint in all_stats:
+                    # Combine les stats si l'endpoint existe déjà
+                    existing = all_stats[endpoint]
+                    total_req = existing['total_requests'] + stats['total_requests']
+                    
+                    all_stats[endpoint] = {
+                        'total_requests': total_req,
+                        'avg_response_time': (
+                            existing['avg_response_time'] * existing['total_requests'] +
+                            stats['avg_response_time'] * stats['total_requests']
+                        ) / total_req,
+                        'max_response_time': max(existing['max_response_time'], stats['max_response_time']),
+                        'min_response_time': min(existing['min_response_time'], stats['min_response_time']),
+                        'error_rate': (
+                            existing['error_rate'] * existing['total_requests'] +
+                            stats['error_rate'] * stats['total_requests']
+                        ) / total_req,
+                        'unique_users': existing['unique_users'] + stats['unique_users']  # Approximation
+                    }
+                else:
+                    all_stats[endpoint] = stats
+        
+        with open(filename, 'w') as f:
+            json.dump(all_stats, f, indent=2, default=str)
+        
+        return all_stats
+
+def infinite_data_stream():
+    """Générateur infini pour simulation de stream de données"""
+    counter = 0
+    while True:
+        yield {
+            'id': counter,
+            'timestamp': datetime.now().isoformat(),
+            'value': random.randint(1, 100),
+            'category': random.choice(['A', 'B', 'C'])
+        }
+        counter += 1
+        time.sleep(0.1)  # Simulation délai réseau
+
+def process_stream_with_window(stream_gen: Generator, window_size: int = 10):
+    """Traite un stream avec une fenêtre glissante"""
+    window = []
+    
+    for data in stream_gen:
+        window.append(data)
+        
+        if len(window) >= window_size:
+            # Traiter la fenêtre
+            avg_value = sum(item['value'] for item in window) / len(window)
+            categories = set(item['category'] for item in window)
+            
+            yield {
+                'window_avg': avg_value,
+                'categories_count': len(categories),
+                'window_size': len(window),
+                'latest_timestamp': window[-1]['timestamp']
+            }
+            
+            # Glisser la fenêtre (retirer le plus ancien)
+            window.pop(0)
+
+def demo_pipeline():
+    """Démonstration complète du pipeline de données"""
+    print("=== PIPELINE DE TRAITEMENT DE DONNÉES ===\\n")
+    
+    pipeline = DataPipeline()
+    
+    # Étape 1: Générer des données
+    print("1. Génération de 10000 logs simulés...")
+    raw_logs = pipeline.generate_sample_logs(10000)
+    
+    # Étape 2: Parser les données
+    print("2. Parsing des logs...")
+    parsed_logs = pipeline.parse_log_data(raw_logs)
+    
+    # Étape 3: Filtrer par niveau d'erreur
+    print("3. Filtrage des logs ERROR et WARNING...")
+    filtered_logs = pipeline.filter_by_level(parsed_logs, ['ERROR', 'WARNING'])
+    
+    # Étape 4: Filtrer par temps de réponse lent
+    print("4. Filtrage des réponses lentes (>0.5s)...")
+    slow_logs = pipeline.filter_by_response_time(filtered_logs, 0.5)
+    
+    # Étape 5: Grouper par endpoint
+    print("5. Groupement par endpoint...")
+    grouped_logs = pipeline.group_by_endpoint(slow_logs)
+    
+    # Étape 6: Calculer les statistiques
+    print("6. Calcul des statistiques...")
+    stats = pipeline.calculate_stats(grouped_logs)
+    
+    # Étape 7: Sauvegarder
+    print("7. Sauvegarde des résultats...")
+    final_stats = pipeline.save_to_json(stats, 'pipeline_results.json')
+    
+    # Résumé
+    print(f"\\n=== RÉSULTATS ===")
+    print(f"Logs traités avec succès: {pipeline.processed_count}")
+    print(f"Erreurs de parsing: {pipeline.errors_count}")
+    print(f"Endpoints analysés: {len(final_stats)}")
+    
+    for endpoint, stat in final_stats.items():
+        print(f"\\n{endpoint}:")
+        print(f"  - Requêtes: {stat['total_requests']}")
+        print(f"  - Temps moyen: {stat['avg_response_time']:.3f}s")
+        print(f"  - Taux d'erreur: {stat['error_rate']:.1f}%")
+
+if __name__ == "__main__":
+    demo_pipeline()
+    
+    # Démonstration stream infini (arrêter avec Ctrl+C)
+    print("\\n=== STREAM INFINI (Ctrl+C pour arrêter) ===")
+    try:
+        stream = infinite_data_stream()
+        windowed = process_stream_with_window(stream, window_size=5)
+        
+        for i, result in enumerate(windowed):
+            print(f"Fenêtre {i+1}: Moyenne={result['window_avg']:.1f}, Catégories={result['categories_count']}")
+            if i >= 10:  # Limiter pour la démo
+                break
+                
+    except KeyboardInterrupt:
+        print("\\nStream arrêté par l'utilisateur.")''',
+                    'exercice': '''## 🎯 Exercice Expert : Système de monitoring en temps réel
+
+**Objectif :** Créer un système de monitoring utilisant des générateurs pour analyser des métriques système en temps réel
+
+### 1. Architecture du système
+
+**Structure des données :**
+```python
+@dataclass
+class SystemMetric:
+    timestamp: datetime
+    metric_type: str  # 'cpu', 'memory', 'disk', 'network'
+    value: float
+    unit: str
+    hostname: str
+    additional_info: dict = None
+```
+
+### 2. Générateurs à implémenter
+
+**a) Générateur de métriques système**
+```python
+def system_metrics_generator(interval: float = 1.0) -> Generator[SystemMetric, None, None]:
+    """
+    Générateur infini qui collecte les métriques système
+    Utilise psutil ou simule les données
+    """
+    pass
+
+def cpu_metrics() -> Generator[SystemMetric, None, None]:
+    """Métriques CPU en temps réel"""
+    pass
+
+def memory_metrics() -> Generator[SystemMetric, None, None]:
+    """Métriques mémoire en temps réel"""
+    pass
+
+def disk_metrics() -> Generator[SystemMetric, None, None]:
+    """Métriques disque en temps réel"""
+    pass
+```
+
+**b) Pipeline de traitement**
+```python
+def anomaly_detector(metrics: Generator[SystemMetric, None, None], 
+                    thresholds: dict) -> Generator[SystemMetric, None, None]:
+    """
+    Détecte les anomalies basées sur des seuils
+    thresholds = {'cpu': 80.0, 'memory': 85.0, 'disk': 90.0}
+    """
+    pass
+
+def sliding_window_average(metrics: Generator[SystemMetric, None, None], 
+                         window_size: int = 10) -> Generator[dict, None, None]:
+    """
+    Calcule la moyenne mobile sur une fenêtre glissante
+    """
+    pass
+
+def metric_aggregator(metrics: Generator[SystemMetric, None, None],
+                     time_window: int = 60) -> Generator[dict, None, None]:
+    """
+    Agrège les métriques par fenêtre de temps
+    """
+    pass
+```
+
+**c) Système d'alertes**
+```python
+def alert_generator(anomalies: Generator[SystemMetric, None, None]) -> Generator[dict, None, None]:
+    """
+    Génère des alertes basées sur les anomalies détectées
+    """
+    pass
+
+def rate_limited_alerts(alerts: Generator[dict, None, None], 
+                       max_alerts_per_minute: int = 5) -> Generator[dict, None, None]:
+    """
+    Limite le taux d'alertes pour éviter le spam
+    """
+    pass
+```
+
+### 3. Fonctionnalités avancées
+
+**a) Générateur de métriques historiques**
+```python
+def historical_data_loader(start_date: datetime, 
+                          end_date: datetime,
+                          chunk_size: int = 1000) -> Generator[List[SystemMetric], None, None]:
+    """
+    Charge les données historiques par chunks sans surcharger la mémoire
+    """
+    pass
+```
+
+**b) Générateur de patterns**
+```python
+def pattern_detector(metrics: Generator[SystemMetric, None, None],
+                    pattern_window: int = 100) -> Generator[dict, None, None]:
+    """
+    Détecte des patterns dans les métriques (pics récurrents, tendances, etc.)
+    """
+    pass
+```
+
+**c) Export de données**
+```python
+def metrics_to_csv(metrics: Generator[SystemMetric, None, None], 
+                  filename: str,
+                  batch_size: int = 1000):
+    """
+    Exporte les métriques vers CSV par batch pour économiser la mémoire
+    """
+    pass
+
+def metrics_to_influxdb(metrics: Generator[SystemMetric, None, None],
+                       connection_params: dict):
+    """
+    Envoie les métriques vers InfluxDB par batch
+    """
+    pass
+```
+
+### 4. Interface de monitoring
+
+```python
+class RealTimeMonitor:
+    def __init__(self):
+        self.active_generators = {}
+        self.alert_handlers = []
+    
+    def start_monitoring(self, metric_types: List[str]):
+        """Démarre le monitoring pour les types de métriques spécifiés"""
+        pass
+    
+    def add_alert_handler(self, handler):
+        """Ajoute un gestionnaire d'alerte"""
+        pass
+    
+    def get_current_stats(self) -> dict:
+        """Retourne les statistiques actuelles"""
+        pass
+    
+    def stop_monitoring(self):
+        """Arrête tous les générateurs de monitoring"""
+        pass
+```
+
+### 5. Exemple d'utilisation
+
+```python
+def demo_monitoring():
+    """Démonstration du système de monitoring"""
+    
+    # Configuration
+    thresholds = {
+        'cpu': 75.0,
+        'memory': 80.0,
+        'disk': 85.0
+    }
+    
+    # Pipeline complet
+    system_gen = system_metrics_generator(interval=0.5)
+    anomaly_gen = anomaly_detector(system_gen, thresholds)
+    alert_gen = alert_generator(anomaly_gen)
+    limited_alerts = rate_limited_alerts(alert_gen, max_alerts_per_minute=3)
+    
+    # Monitoring en temps réel
+    monitor = RealTimeMonitor()
+    monitor.start_monitoring(['cpu', 'memory', 'disk'])
+    
+    try:
+        for alert in limited_alerts:
+            print(f"🚨 ALERTE: {alert}")
+            
+            # Sauvegarder l'alerte
+            # Envoyer notification
+            # Logger l'incident
+            
+    except KeyboardInterrupt:
+        print("Monitoring arrêté")
+        monitor.stop_monitoring()
+```
+
+### 6. Tests de performance
+
+```python
+def benchmark_generators():
+    """Compare performance avec/sans générateurs"""
+    
+    def collect_all_metrics(duration: int) -> List[SystemMetric]:
+        """Version sans générateur (charge tout en mémoire)"""
+        pass
+    
+    def process_metrics_stream(duration: int):
+        """Version avec générateurs (streaming)"""
+        pass
+    
+    # Comparer utilisation mémoire et performance
+```
+
+### 7. Bonus : Machine Learning
+
+```python
+def ml_anomaly_detector(metrics: Generator[SystemMetric, None, None],
+                       model_path: str) -> Generator[dict, None, None]:
+    """
+    Utilise un modèle ML pour détecter des anomalies complexes
+    """
+    pass
+
+def predictive_generator(historical_data: Generator[SystemMetric, None, None],
+                        model) -> Generator[SystemMetric, None, None]:
+    """
+    Prédit les métriques futures basées sur l'historique
+    """
+    pass
+```
+
+### 8. Critères d'évaluation
+
+- **Efficacité mémoire** : Traitement de gros volumes sans épuiser la RAM
+- **Performance temps réel** : Latence minimale dans le pipeline
+- **Extensibilité** : Facilité d'ajouter de nouveaux types de métriques
+- **Robustesse** : Gestion des erreurs et récupération
+- **Modularité** : Générateurs réutilisables et composables
+
+Cet exercice teste votre maîtrise des générateurs pour des applications en temps réel !'''
+                }
+            )
+        
         self.stdout.write(
             self.style.SUCCESS('Tous les cours Python ont été créés avec succès !')
         )

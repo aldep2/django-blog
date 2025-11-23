@@ -92,6 +92,7 @@ class Cours(models.Model):
         ('debutant', 'Débutant'),
         ('intermediaire', 'Intermédiaire'),
         ('avance', 'Avancé'),
+        ('expert', 'Expert'),
     ]
     
     titre = models.CharField(max_length=200)
@@ -128,6 +129,7 @@ class Cours(models.Model):
             'debutant': '#28a745',     # Vert
             'intermediaire': '#ffc107', # Jaune
             'avance': '#dc3545',       # Rouge
+            'expert': '#6f42c1',       # Violet
         }
         return couleurs.get(self.niveau, '#6c757d')
 
