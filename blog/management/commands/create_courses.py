@@ -1619,7 +1619,563 @@ Total: 2 livres (1 disponible, 1 emprunté)
                 }
             )
         
-        # Cours 3: Python Expert
+        # Cours 3: Python Avancé - PARTIE 1
+        cours_avance, created = Cours.objects.get_or_create(
+            slug='python-avance',
+            defaults={
+                'titre': 'Python Avancé',
+                'description': 'Maîtrisez les concepts avancés de Python : programmation orientée objet, gestion des erreurs, modules et packages.',
+                'niveau': 'avance',
+                'duree_estimee': 15,
+                'ordre': 3,
+                'actif': True
+            }
+        )
+        
+        if created:
+            self.stdout.write(
+                self.style.SUCCESS(f'Cours créé: {cours_avance.titre}')
+            )
+        
+        # Chapitre 1: Programmation Orientée Objet - PARTIE 1
+        if created or not cours_avance.chapitres.exists():
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='programmation-orientee-objet-1',
+                defaults={
+                    'titre': 'POO - Classes et Objets',
+                    'ordre': 0,
+                    'contenu': '''# Programmation Orientée Objet - Classes et Objets
+
+## 🏗️ Qu'est-ce que la POO ?
+
+La **Programmation Orientée Objet** (POO) est un paradigme qui organise le code autour d'**objets** plutôt que de fonctions. Un objet combine des données (attributs) et des comportements (méthodes).
+
+## 📦 Créer votre première classe
+
+```python
+class Voiture:
+    # Attribut de classe (partagé par toutes les instances)
+    nombre_roues = 4
+    
+    def __init__(self, marque, modele, couleur):
+        # Attributs d'instance (propres à chaque objet)
+        self.marque = marque
+        self.modele = modele
+        self.couleur = couleur
+        self.kilometrage = 0
+        self.moteur_allume = False
+    
+    def demarrer(self):
+        """Démarre le moteur de la voiture"""
+        if not self.moteur_allume:
+            self.moteur_allume = True
+            print(f"La {self.marque} {self.modele} démarre ! 🚗")
+        else:
+            print("Le moteur est déjà allumé")
+    
+    def arreter(self):
+        """Arrête le moteur"""
+        if self.moteur_allume:
+            self.moteur_allume = False
+            print("Moteur arrêté")
+        else:
+            print("Le moteur est déjà arrêté")
+    
+    def rouler(self, distance):
+        """Fait rouler la voiture sur une distance donnée"""
+        if not self.moteur_allume:
+            print("Démarrez d'abord le moteur !")
+            return
+        
+        self.kilometrage += distance
+        print(f"Vous avez roulé {distance} km. Kilométrage total: {self.kilometrage} km")
+
+# Créer des objets (instances)
+ma_voiture = Voiture("Toyota", "Corolla", "rouge")
+voiture_ami = Voiture("BMW", "X5", "noire")
+
+# Utiliser les méthodes
+ma_voiture.demarrer()
+ma_voiture.rouler(50)
+print(f"Ma voiture: {ma_voiture.marque} {ma_voiture.modele} {ma_voiture.couleur}")
+```
+
+## 🎯 Méthodes spéciales (dunder methods)
+
+```python
+class Personne:
+    def __init__(self, nom, age):
+        self.nom = nom
+        self.age = age
+    
+    def __str__(self):
+        """Représentation lisible pour l'utilisateur"""
+        return f"{self.nom} ({self.age} ans)"
+    
+    def __repr__(self):
+        """Représentation technique pour le développeur"""
+        return f"Personne(nom='{self.nom}', age={self.age})"
+    
+    def __eq__(self, autre):
+        """Définit l'égalité entre deux personnes"""
+        if isinstance(autre, Personne):
+            return self.nom == autre.nom and self.age == autre.age
+        return False
+    
+    def __lt__(self, autre):
+        """Permet de comparer l'âge (moins que)"""
+        if isinstance(autre, Personne):
+            return self.age < autre.age
+        return NotImplemented
+
+# Utilisation
+alice = Personne("Alice", 25)
+bob = Personne("Bob", 30)
+
+print(alice)        # Alice (25 ans) - utilise __str__
+print(repr(alice))  # Personne(nom='Alice', age=25) - utilise __repr__
+print(alice == bob) # False - utilise __eq__
+print(alice < bob)  # True - utilise __lt__
+```
+
+## 🔒 Encapsulation et propriétés
+
+```python
+class CompteBancaire:
+    def __init__(self, titulaire, solde_initial=0):
+        self.titulaire = titulaire
+        self._solde = solde_initial  # Attribut "privé" par convention
+        self._historique = []
+    
+    @property
+    def solde(self):
+        """Getter pour le solde (lecture seule)"""
+        return self._solde
+    
+    def deposer(self, montant):
+        """Déposer de l'argent"""
+        if montant <= 0:
+            raise ValueError("Le montant doit être positif")
+        
+        self._solde += montant
+        self._historique.append(f"Dépôt: +{montant}€")
+        print(f"Dépôt de {montant}€. Nouveau solde: {self._solde}€")
+    
+    def retirer(self, montant):
+        """Retirer de l'argent"""
+        if montant <= 0:
+            raise ValueError("Le montant doit être positif")
+        if montant > self._solde:
+            raise ValueError("Solde insuffisant")
+        
+        self._solde -= montant
+        self._historique.append(f"Retrait: -{montant}€")
+        print(f"Retrait de {montant}€. Nouveau solde: {self._solde}€")
+    
+    def afficher_historique(self):
+        """Affiche l'historique des transactions"""
+        print(f"\\n=== Historique de {self.titulaire} ===")
+        for transaction in self._historique:
+            print(f"• {transaction}")
+        print(f"Solde actuel: {self._solde}€")
+
+# Utilisation
+compte = CompteBancaire("Alice Dupont", 1000)
+print(f"Solde: {compte.solde}€")  # Utilise le getter
+
+compte.deposer(500)
+compte.retirer(200)
+compte.afficher_historique()
+```
+
+## 📊 Attributs de classe vs d'instance
+
+```python
+class Employe:
+    # Attributs de classe (partagés)
+    entreprise = "TechCorp"
+    nb_employes = 0
+    
+    def __init__(self, nom, poste, salaire):
+        # Attributs d'instance (uniques)
+        self.nom = nom
+        self.poste = poste
+        self.salaire = salaire
+        
+        # Incrémenter le compteur d'employés
+        Employe.nb_employes += 1
+    
+    @classmethod
+    def changer_entreprise(cls, nouvelle_entreprise):
+        """Méthode de classe pour changer le nom de l'entreprise"""
+        cls.entreprise = nouvelle_entreprise
+    
+    @staticmethod
+    def calculer_salaire_annuel(salaire_mensuel):
+        """Méthode statique - ne dépend pas de l'instance ou de la classe"""
+        return salaire_mensuel * 12
+    
+    def __del__(self):
+        """Destructeur - appelé quand l'objet est supprimé"""
+        Employe.nb_employes -= 1
+        print(f"{self.nom} a quitté l'entreprise")
+
+# Utilisation
+emp1 = Employe("Alice", "Développeuse", 4000)
+emp2 = Employe("Bob", "Designer", 3500)
+
+print(f"Entreprise: {Employe.entreprise}")
+print(f"Nombre d'employés: {Employe.nb_employes}")
+
+# Méthode de classe
+Employe.changer_entreprise("NewTech")
+print(f"Nouvelle entreprise: {emp1.entreprise}")  # Changé pour tous
+
+# Méthode statique
+salaire_annuel = Employe.calculer_salaire_annuel(4000)
+print(f"Salaire annuel: {salaire_annuel}€")
+```''',
+                    'code_exemple': '''# Exemple complet : Système de gestion de bibliothèque avec POO
+
+from datetime import datetime, timedelta
+
+class Livre:
+    """Classe représentant un livre dans la bibliothèque"""
+    
+    def __init__(self, isbn, titre, auteur, annee_publication, genre="Fiction"):
+        self.isbn = isbn
+        self.titre = titre
+        self.auteur = auteur
+        self.annee_publication = annee_publication
+        self.genre = genre
+        self.disponible = True
+        self.date_emprunt = None
+        self.emprunteur = None
+    
+    def __str__(self):
+        statut = "DISPONIBLE" if self.disponible else f"EMPRUNTÉ par {self.emprunteur}"
+        return f"'{self.titre}' par {self.auteur} ({self.annee_publication}) - {statut}"
+    
+    def __repr__(self):
+        return f"Livre(isbn='{self.isbn}', titre='{self.titre}', auteur='{self.auteur}')"
+    
+    def emprunter(self, nom_emprunteur):
+        """Emprunte le livre à une personne"""
+        if not self.disponible:
+            return False, f"Le livre '{self.titre}' est déjà emprunté"
+        
+        self.disponible = False
+        self.emprunteur = nom_emprunteur
+        self.date_emprunt = datetime.now()
+        return True, f"Livre '{self.titre}' emprunté par {nom_emprunteur}"
+    
+    def rendre(self):
+        """Rend le livre à la bibliothèque"""
+        if self.disponible:
+            return False, f"Le livre '{self.titre}' n'est pas emprunté"
+        
+        emprunteur = self.emprunteur
+        self.disponible = True
+        self.emprunteur = None
+        self.date_emprunt = None
+        return True, f"Livre '{self.titre}' rendu par {emprunteur}"
+    
+    def jours_emprunt(self):
+        """Calcule le nombre de jours d'emprunt"""
+        if self.disponible or not self.date_emprunt:
+            return 0
+        return (datetime.now() - self.date_emprunt).days
+
+class Bibliotheque:
+    """Classe gérant une collection de livres"""
+    
+    def __init__(self, nom):
+        self.nom = nom
+        self.livres = {}  # Dictionnaire {isbn: Livre}
+        self.historique_emprunts = []
+    
+    def ajouter_livre(self, livre):
+        """Ajoute un livre à la bibliothèque"""
+        if livre.isbn in self.livres:
+            return False, f"Un livre avec l'ISBN {livre.isbn} existe déjà"
+        
+        self.livres[livre.isbn] = livre
+        return True, f"Livre '{livre.titre}' ajouté à la bibliothèque"
+    
+    def supprimer_livre(self, isbn):
+        """Supprime un livre de la bibliothèque"""
+        if isbn not in self.livres:
+            return False, "Livre non trouvé"
+        
+        livre = self.livres[isbn]
+        if not livre.disponible:
+            return False, f"Impossible de supprimer '{livre.titre}' : livre emprunté"
+        
+        del self.livres[isbn]
+        return True, f"Livre '{livre.titre}' supprimé"
+    
+    def rechercher_par_titre(self, titre_partiel):
+        """Recherche des livres par titre (recherche partielle)"""
+        resultats = []
+        titre_lower = titre_partiel.lower()
+        
+        for livre in self.livres.values():
+            if titre_lower in livre.titre.lower():
+                resultats.append(livre)
+        
+        return resultats
+    
+    def rechercher_par_auteur(self, auteur_partiel):
+        """Recherche des livres par auteur"""
+        resultats = []
+        auteur_lower = auteur_partiel.lower()
+        
+        for livre in self.livres.values():
+            if auteur_lower in livre.auteur.lower():
+                resultats.append(livre)
+        
+        return resultats
+    
+    def livres_disponibles(self):
+        """Retourne la liste des livres disponibles"""
+        return [livre for livre in self.livres.values() if livre.disponible]
+    
+    def livres_empruntes(self):
+        """Retourne la liste des livres empruntés"""
+        return [livre for livre in self.livres.values() if not livre.disponible]
+    
+    def emprunter_livre(self, isbn, nom_emprunteur):
+        """Emprunte un livre par son ISBN"""
+        if isbn not in self.livres:
+            return False, "Livre non trouvé"
+        
+        livre = self.livres[isbn]
+        succes, message = livre.emprunter(nom_emprunteur)
+        
+        if succes:
+            self.historique_emprunts.append({
+                'action': 'emprunt',
+                'livre': livre.titre,
+                'emprunteur': nom_emprunteur,
+                'date': datetime.now().strftime("%Y-%m-%d %H:%M")
+            })
+        
+        return succes, message
+    
+    def rendre_livre(self, isbn):
+        """Rend un livre par son ISBN"""
+        if isbn not in self.livres:
+            return False, "Livre non trouvé"
+        
+        livre = self.livres[isbn]
+        succes, message = livre.rendre()
+        
+        if succes:
+            self.historique_emprunts.append({
+                'action': 'retour',
+                'livre': livre.titre,
+                'emprunteur': livre.emprunteur or 'Inconnu',
+                'date': datetime.now().strftime("%Y-%m-%d %H:%M")
+            })
+        
+        return succes, message
+    
+    def statistiques(self):
+        """Affiche les statistiques de la bibliothèque"""
+        total_livres = len(self.livres)
+        disponibles = len(self.livres_disponibles())
+        empruntes = len(self.livres_empruntes())
+        
+        print(f"\\n=== Statistiques de {self.nom} ===")
+        print(f"Total de livres: {total_livres}")
+        print(f"Disponibles: {disponibles}")
+        print(f"Empruntés: {empruntes}")
+        print(f"Taux d'emprunt: {(empruntes/total_livres*100) if total_livres > 0 else 0:.1f}%")
+        
+        # Top genres
+        genres = {}
+        for livre in self.livres.values():
+            genres[livre.genre] = genres.get(livre.genre, 0) + 1
+        
+        if genres:
+            print("\\nGenres les plus populaires:")
+            for genre, count in sorted(genres.items(), key=lambda x: x[1], reverse=True)[:3]:
+                print(f"  {genre}: {count} livre(s)")
+    
+    def afficher_tous_livres(self):
+        """Affiche tous les livres de la bibliothèque"""
+        if not self.livres:
+            print("Aucun livre dans la bibliothèque.")
+            return
+        
+        print(f"\\n=== Livres de {self.nom} ===")
+        for i, livre in enumerate(self.livres.values(), 1):
+            print(f"{i}. {livre}")
+
+# Exemple d'utilisation
+if __name__ == "__main__":
+    # Créer une bibliothèque
+    biblio = Bibliotheque("Bibliothèque Municipale")
+    
+    # Ajouter des livres
+    livre1 = Livre("978-2-07-036822-1", "Le Petit Prince", "Antoine de Saint-Exupéry", 1943, "Classique")
+    livre2 = Livre("978-2-07-037065-1", "1984", "George Orwell", 1949, "Science-Fiction")
+    livre3 = Livre("978-2-253-00203-5", "Les Misérables", "Victor Hugo", 1862, "Classique")
+    
+    for livre in [livre1, livre2, livre3]:
+        succes, message = biblio.ajouter_livre(livre)
+        print(message)
+    
+    # Afficher tous les livres
+    biblio.afficher_tous_livres()
+    
+    # Emprunter un livre
+    succes, message = biblio.emprunter_livre("978-2-07-036822-1", "Alice Dupont")
+    print(f"\\n{message}")
+    
+    # Afficher les statistiques
+    biblio.statistiques()
+    
+    # Rechercher des livres
+    print("\\n=== Recherche 'Victor' ===")
+    resultats = biblio.rechercher_par_auteur("Victor")
+    for livre in resultats:
+        print(f"• {livre}")''',
+                    'exercice': '''## 🎯 Exercice : Système de gestion d'école
+
+**Objectif :** Créer un système complet de gestion d'école avec POO
+
+### Partie 1 : Classes de base
+
+Créez les classes suivantes :
+
+#### 1. Classe `Personne` (classe parent)
+```python
+class Personne:
+    def __init__(self, nom, prenom, age, email):
+        # Attributs de base
+        pass
+    
+    def se_presenter(self):
+        # Méthode générale de présentation
+        pass
+```
+
+#### 2. Classe `Etudiant` (hérite de Personne)
+```python
+class Etudiant(Personne):
+    def __init__(self, nom, prenom, age, email, numero_etudiant, classe):
+        # Appeler le constructeur parent
+        # Ajouter attributs spécifiques : notes, absences
+        pass
+    
+    def ajouter_note(self, matiere, note):
+        # Ajouter une note dans une matière
+        pass
+    
+    def calculer_moyenne(self):
+        # Calculer la moyenne générale
+        pass
+    
+    def marquer_absent(self, date):
+        # Marquer une absence
+        pass
+```
+
+#### 3. Classe `Professeur` (hérite de Personne)
+```python
+class Professeur(Personne):
+    def __init__(self, nom, prenom, age, email, matiere, salaire):
+        # Constructeur avec matière enseignée et salaire
+        pass
+    
+    def donner_note(self, etudiant, note):
+        # Donner une note à un étudiant
+        pass
+    
+    def voir_ses_etudiants(self, classe):
+        # Voir les étudiants de sa classe
+        pass
+```
+
+### Partie 2 : Classe de gestion
+
+#### 4. Classe `Ecole`
+```python
+class Ecole:
+    def __init__(self, nom_ecole):
+        self.nom = nom_ecole
+        self.etudiants = {}  # {numero_etudiant: Etudiant}
+        self.professeurs = {}  # {id_prof: Professeur}
+        self.classes = {}  # {nom_classe: [etudiants]}
+    
+    def inscrire_etudiant(self, etudiant):
+        # Inscrire un nouvel étudiant
+        pass
+    
+    def embaucher_professeur(self, professeur):
+        # Embaucher un professeur
+        pass
+    
+    def creer_classe(self, nom_classe, professeur_principal):
+        # Créer une nouvelle classe
+        pass
+    
+    def bulletin_notes(self, numero_etudiant):
+        # Générer le bulletin d'un étudiant
+        pass
+    
+    def statistiques_classe(self, nom_classe):
+        # Statistiques d'une classe
+        pass
+```
+
+### Exemple d'utilisation attendue :
+
+```python
+# Créer l'école
+mon_ecole = Ecole("Lycée Victor Hugo")
+
+# Créer des professeurs
+prof_math = Professeur("Dupont", "Pierre", 45, "p.dupont@ecole.fr", "Mathématiques", 3500)
+prof_fr = Professeur("Martin", "Sophie", 38, "s.martin@ecole.fr", "Français", 3200)
+
+# Créer des étudiants
+alice = Etudiant("Durand", "Alice", 16, "alice@email.com", "E001", "2A")
+bob = Etudiant("Bernard", "Bob", 17, "bob@email.com", "E002", "2A")
+
+# Inscrire dans l'école
+mon_ecole.embaucher_professeur(prof_math)
+mon_ecole.inscrire_etudiant(alice)
+mon_ecole.inscrire_etudiant(bob)
+
+# Ajouter des notes
+alice.ajouter_note("Mathématiques", 15)
+alice.ajouter_note("Français", 18)
+
+# Afficher bulletin
+mon_ecole.bulletin_notes("E001")
+```
+
+### Fonctionnalités bonus :
+
+1. **Validation des données** (email, âge, notes entre 0-20)
+2. **Méthodes spéciales** (`__str__`, `__repr__`, `__eq__`)
+3. **Gestion des absences** avec dates
+4. **Calcul de moyennes par matière**
+5. **Classement des étudiants**
+6. **Sauvegarde en fichier JSON**
+
+**Conseils :**
+- Utilisez l'héritage pour éviter la duplication
+- Implémentez les propriétés avec `@property`
+- Gérez les erreurs (étudiant inexistant, note invalide)
+- Documentez vos classes avec des docstrings'''
+                }
+            )
+
+        # Cours 4: Python Expert (renommé et réordonné)
         cours_expert, created = Cours.objects.get_or_create(
             slug='python-expert',
             defaults={
@@ -1627,7 +2183,7 @@ Total: 2 livres (1 disponible, 1 emprunté)
                 'description': 'Maîtrisez les concepts avancés de Python : décorateurs, générateurs, métaclasses, programmation asynchrone et optimisation de performances.',
                 'niveau': 'expert',
                 'duree_estimee': 20,
-                'ordre': 3,
+                'ordre': 4,
                 'actif': True
             }
         )
