@@ -6,7 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q
-from .models import Article, Categorie, Commentaire
+from .models import Article, Categorie, Commentaire, Cours, Chapitre
 from .forms import CommentaireForm
 
 
@@ -189,3 +189,52 @@ def user_logout(request):
     if username:
         messages.success(request, f'À bientôt {username} !')
     return redirect('blog:liste_articles')
+
+
+# Vues pour les cours
+def liste_cours(request):
+    """Vue pour afficher la liste des cours disponibles"""
+    cours_list = Cours.objects.filter(actif=True).order_by('ordre', 'titre')
+    
+    # Récupération des catégories pour le menu
+    categories = Categorie.objects.all()
+    
+    context = {
+        'cours_list': cours_list,
+        'categories': categories,
+    }
+    return render(request, 'blog/cours/liste_cours.html', context)
+
+
+def detail_cours(request, slug):
+    """Vue pour afficher le détail d'un cours avec ses chapitres"""
+    cours = get_object_or_404(Cours, slug=slug, actif=True)
+    chapitres = cours.chapitres.all().order_by('ordre')
+    
+    context = {
+        'cours': cours,
+        'chapitres': chapitres,
+    }
+    return render(request, 'blog/cours/detail_cours.html', context)
+
+
+def detail_chapitre(request, cours_slug, chapitre_slug):
+    """Vue pour afficher le détail d'un chapitre"""
+    cours = get_object_or_404(Cours, slug=cours_slug, actif=True)
+    chapitre = get_object_or_404(Chapitre, cours=cours, slug=chapitre_slug)
+    
+    # Navigation entre chapitres
+    chapitre_precedent = chapitre.get_chapitre_precedent()
+    chapitre_suivant = chapitre.get_chapitre_suivant()
+    
+    # Tous les chapitres pour la navigation latérale
+    tous_chapitres = cours.chapitres.all().order_by('ordre')
+    
+    context = {
+        'cours': cours,
+        'chapitre': chapitre,
+        'chapitre_precedent': chapitre_precedent,
+        'chapitre_suivant': chapitre_suivant,
+        'tous_chapitres': tous_chapitres,
+    }
+    return render(request, 'blog/cours/detail_chapitre.html', context)

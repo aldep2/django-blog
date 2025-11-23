@@ -1,0 +1,181 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ cours.titre }} - Cours Python{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Navigation retour -->
+    <div class="col-12 mb-3">
+        <a href="{% url 'blog:liste_cours' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour aux cours
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Contenu principal -->
+    <div class="col-lg-8">
+        <!-- En-tête du cours -->
+        <div class="card mb-4 border-0 shadow">
+            {% if cours.image %}
+            <img src="{{ cours.image.url }}" class="card-img-top" style="height: 300px; object-fit: cover;" alt="{{ cours.titre }}">
+            {% else %}
+            <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fab fa-python fa-5x text-white"></i>
+            </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge me-2" style="background-color: {{ cours.get_niveau_couleur }}">
+                        <i class="fas fa-signal"></i> {{ cours.get_niveau_display }}
+                    </span>
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-clock"></i> {{ cours.duree_estimee }} heures
+                    </span>
+                    <span class="badge bg-info">
+                        <i class="fas fa-list"></i> {{ chapitres.count }} chapitres
+                    </span>
+                </div>
+                
+                <h1 class="card-title">{{ cours.titre }}</h1>
+                <p class="card-text lead">{{ cours.description|linebreaks }}</p>
+            </div>
+        </div>
+        
+        <!-- Liste des chapitres -->
+        <div class="card border-0 shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-list-ol"></i> Programme du cours
+                </h4>
+            </div>
+            <div class="card-body p-0">
+                {% if chapitres %}
+                    {% for chapitre in chapitres %}
+                    <div class="d-flex align-items-center p-3 border-bottom chapitre-item">
+                        <div class="chapitre-numero me-3">
+                            <span class="badge bg-primary rounded-circle">{{ forloop.counter }}</span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{{ chapitre.get_absolute_url }}" class="text-decoration-none">
+                                    {{ chapitre.titre }}
+                                </a>
+                            </h6>
+                            {% if chapitre.code_exemple %}
+                            <small class="text-success">
+                                <i class="fas fa-code"></i> Avec code d'exemple
+                            </small>
+                            {% endif %}
+                            {% if chapitre.exercice %}
+                            <small class="text-info ms-2">
+                                <i class="fas fa-tasks"></i> Avec exercice
+                            </small>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <a href="{{ chapitre.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-play"></i> Voir
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-4 text-center">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Ce cours est en préparation. Les chapitres seront ajoutés prochainement.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+            <!-- Informations du cours -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> Informations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>Niveau :</strong>
+                        <span class="badge" style="background-color: {{ cours.get_niveau_couleur }}">
+                            {{ cours.get_niveau_display }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>Durée :</strong>
+                        <span>{{ cours.duree_estimee }} heures</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>Chapitres :</strong>
+                        <span>{{ chapitres.count }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <strong>Prix :</strong>
+                        <span class="text-success"><strong>Gratuit</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Commencer le cours -->
+            {% if chapitres %}
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Prêt à commencer ?</h5>
+                    <p class="card-text">Démarrez par le premier chapitre</p>
+                    <a href="{{ chapitres.first.get_absolute_url }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-play"></i> Commencer le cours
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Conseils -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Conseils
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Suivez les chapitres dans l'ordre
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Pratiquez avec les exercices
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Testez le code d'exemple
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            N'hésitez pas à recommencer
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chapitre-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .chapitre-numero {
+        min-width: 40px;
+    }
+</style>
+{% endblock %}

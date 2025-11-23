@@ -58,6 +58,11 @@
                             <i class="fas fa-home"></i> Accueil
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'blog:liste_cours' %}">
+                            <i class="fab fa-python"></i> Cours Python
+                        </a>
+                    </li>
                     {% if categories %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">

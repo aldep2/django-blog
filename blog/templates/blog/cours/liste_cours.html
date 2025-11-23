@@ -1,0 +1,130 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Cours Python - Mon Blog{% endblock %}
+
+{% block content %}
+<!-- En-tête de la section cours -->
+<div class="hero-section text-center py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px;">
+    <div class="container">
+        <h1 class="display-4 mb-3">
+            <i class="fab fa-python"></i> Cours Python
+        </h1>
+        <p class="lead">Apprenez Python de zéro avec nos cours interactifs</p>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-5">
+    <div class="col-md-4 text-center">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
+                <h4>{{ cours_list.count }}</h4>
+                <p class="text-muted">Cours disponibles</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                <h4>Gratuit</h4>
+                <p class="text-muted">Formation complète</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-code fa-3x text-info mb-3"></i>
+                <h4>Pratique</h4>
+                <p class="text-muted">Avec exercices</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des cours -->
+<div class="row">
+    {% for cours in cours_list %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm cours-card">
+            {% if cours.image %}
+            <img src="{{ cours.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ cours.titre }}">
+            {% else %}
+            <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(45deg, #667eea, #764ba2);">
+                <i class="fab fa-python fa-4x text-white"></i>
+            </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <!-- Badge niveau -->
+                <div class="mb-2">
+                    <span class="badge" style="background-color: {{ cours.get_niveau_couleur }}; color: white;">
+                        <i class="fas fa-signal"></i> {{ cours.get_niveau_display }}
+                    </span>
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-clock"></i> {{ cours.duree_estimee }}h
+                    </span>
+                </div>
+                
+                <h5 class="card-title">{{ cours.titre }}</h5>
+                <p class="card-text">{{ cours.description|truncatewords:20 }}</p>
+                
+                <!-- Informations du cours -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-list"></i> 
+                        {{ cours.chapitres.count }} chapitre{{ cours.chapitres.count|pluralize }}
+                    </small>
+                    <a href="{{ cours.get_absolute_url }}" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Commencer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-book fa-4x text-muted mb-3"></i>
+            <h3 class="text-muted">Aucun cours disponible</h3>
+            <p class="text-muted">Les cours Python arrivent bientôt !</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Section d'encouragement -->
+{% if cours_list %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="alert alert-info border-0" style="background: linear-gradient(90deg, #e3f2fd, #f3e5f5); border-left: 4px solid #2196f3;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-lightbulb fa-2x text-primary me-3"></i>
+                <div>
+                    <h5 class="alert-heading">Conseil pour bien commencer</h5>
+                    <p class="mb-0">Commencez par les cours débutants et progressez à votre rythme. Chaque cours contient des exercices pratiques pour consolider vos acquis !</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .cours-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .cours-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .hero-section {
+        background-attachment: fixed;
+    }
+</style>
+{% endblock %}

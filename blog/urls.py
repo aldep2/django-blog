@@ -20,4 +20,9 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('signup/', views.user_signup, name='signup'),
     path('logout/', views.user_logout, name='logout'),
+    
+    # URLs des cours
+    path('cours/', views.liste_cours, name='liste_cours'),
+    path('cours/<slug:slug>/', views.detail_cours, name='detail_cours'),
+    path('cours/<slug:cours_slug>/<slug:chapitre_slug>/', views.detail_chapitre, name='detail_chapitre'),
 ]

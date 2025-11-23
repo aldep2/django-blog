@@ -1,0 +1,234 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ chapitre.titre }} - {{ cours.titre }}{% endblock %}
+
+{% block extra_css %}
+<!-- Prism.js pour la coloration syntaxique -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet">
+
+<style>
+    .code-block {
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 20px 0;
+    }
+    
+    .code-header {
+        background: #2d3748;
+        color: white;
+        padding: 10px 15px;
+        font-size: 14px;
+        border-bottom: 1px solid #4a5568;
+    }
+    
+    .exercice-block {
+        background: #f7fafc;
+        border-left: 4px solid #4299e1;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .chapitre-nav {
+        position: sticky;
+        top: 20px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .chapitre-nav .list-group-item.active {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+    
+    .navigation-buttons .btn {
+        min-width: 150px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Navigation principale -->
+    <div class="col-12 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'blog:liste_cours' %}">
+                        <i class="fas fa-graduation-cap"></i> Cours
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ cours.get_absolute_url }}">{{ cours.titre }}</a>
+                </li>
+                <li class="breadcrumb-item active">{{ chapitre.titre }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Contenu du chapitre -->
+    <div class="col-lg-9">
+        <div class="card border-0 shadow">
+            <div class="card-body">
+                <!-- En-tête du chapitre -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="mb-2">{{ chapitre.titre }}</h1>
+                        <p class="text-muted">
+                            <i class="fas fa-book"></i> {{ cours.titre }} - 
+                            Chapitre {{ chapitre.ordre|add:1 }}
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">{{ cours.get_niveau_display }}</span>
+                    </div>
+                </div>
+                
+                <!-- Contenu du chapitre -->
+                <div class="chapitre-content">
+                    {{ chapitre.contenu|linebreaks }}
+                </div>
+                
+                <!-- Code d'exemple -->
+                {% if chapitre.code_exemple %}
+                <div class="code-block">
+                    <div class="code-header">
+                        <i class="fas fa-code"></i> Code d'exemple
+                    </div>
+                    <pre class="line-numbers"><code class="language-python">{{ chapitre.code_exemple }}</code></pre>
+                </div>
+                {% endif %}
+                
+                <!-- Exercice pratique -->
+                {% if chapitre.exercice %}
+                <div class="exercice-block">
+                    <h5 class="text-primary mb-3">
+                        <i class="fas fa-tasks"></i> Exercice pratique
+                    </h5>
+                    {{ chapitre.exercice|linebreaks }}
+                </div>
+                {% endif %}
+                
+                <!-- Navigation entre chapitres -->
+                <div class="navigation-buttons d-flex justify-content-between mt-5 pt-4 border-top">
+                    <div>
+                        {% if chapitre_precedent %}
+                        <a href="{{ chapitre_precedent.get_absolute_url }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Précédent<br>
+                            <small>{{ chapitre_precedent.titre }}</small>
+                        </a>
+                        {% else %}
+                        <a href="{{ cours.get_absolute_url }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Cours<br>
+                            <small>Retour au sommaire</small>
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-end">
+                        {% if chapitre_suivant %}
+                        <a href="{{ chapitre_suivant.get_absolute_url }}" class="btn btn-primary">
+                            Suivant <i class="fas fa-arrow-right"></i><br>
+                            <small>{{ chapitre_suivant.titre }}</small>
+                        </a>
+                        {% else %}
+                        <div class="text-center">
+                            <div class="alert alert-success d-inline-block">
+                                <i class="fas fa-trophy"></i> Félicitations !<br>
+                                <small>Vous avez terminé ce cours</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar navigation -->
+    <div class="col-lg-3">
+        <div class="chapitre-nav">
+            <!-- Progression -->
+            <div class="card mb-3 border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Progression
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% with total_chapitres=tous_chapitres.count %}
+                    {% with chapitre_actuel=chapitre.ordre|add:1 %}
+                    <div class="progress mb-2">
+                        <div class="progress-bar" style="width: {% widthratio chapitre_actuel total_chapitres 100 %}%"></div>
+                    </div>
+                    <small class="text-muted">
+                        Chapitre {{ chapitre_actuel }} sur {{ total_chapitres }}
+                        ({% widthratio chapitre_actuel total_chapitres 100 %}%)
+                    </small>
+                    {% endwith %}
+                    {% endwith %}
+                </div>
+            </div>
+            
+            <!-- Liste des chapitres -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list"></i> Chapitres
+                    </h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for chap in tous_chapitres %}
+                    <a href="{{ chap.get_absolute_url }}" 
+                       class="list-group-item list-group-item-action d-flex align-items-center {% if chap.id == chapitre.id %}active{% endif %}">
+                        <span class="badge {% if chap.id == chapitre.id %}bg-white text-primary{% else %}bg-primary{% endif %} me-2">
+                            {{ forloop.counter }}
+                        </span>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ chap.titre }}</div>
+                            <div class="d-flex gap-1 mt-1">
+                                {% if chap.code_exemple %}
+                                <small class="text-success"><i class="fas fa-code"></i></small>
+                                {% endif %}
+                                {% if chap.exercice %}
+                                <small class="text-info"><i class="fas fa-tasks"></i></small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Prism.js pour la coloration syntaxique -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+<script>
+    // Initialisation de Prism.js
+    Prism.highlightAll();
+    
+    // Smooth scroll pour les liens internes
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -83,3 +83,91 @@ class Commentaire(models.Model):
     
     def __str__(self):
         return f'Commentaire de {self.auteur.username} sur {self.article.titre}'
+
+
+class Cours(models.Model):
+    """Modèle pour les cours de programmation"""
+    
+    NIVEAU_CHOICES = [
+        ('debutant', 'Débutant'),
+        ('intermediaire', 'Intermédiaire'),
+        ('avance', 'Avancé'),
+    ]
+    
+    titre = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True)
+    description = models.TextField()
+    niveau = models.CharField(max_length=15, choices=NIVEAU_CHOICES, default='debutant')
+    duree_estimee = models.PositiveIntegerField(help_text="Durée estimée en heures")
+    
+    # Métadonnées
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+    actif = models.BooleanField(default=True)
+    
+    # Ordre d'affichage
+    ordre = models.PositiveIntegerField(default=0, help_text="Ordre d'affichage (0 = premier)")
+    
+    # Image de cours
+    image = models.ImageField(upload_to='cours/', blank=True, null=True)
+    
+    class Meta:
+        verbose_name = "Cours"
+        verbose_name_plural = "Cours"
+        ordering = ['ordre', 'titre']
+    
+    def __str__(self):
+        return f"{self.titre} ({self.get_niveau_display()})"
+    
+    def get_absolute_url(self):
+        return reverse('blog:detail_cours', kwargs={'slug': self.slug})
+    
+    def get_niveau_couleur(self):
+        """Retourne une couleur CSS selon le niveau"""
+        couleurs = {
+            'debutant': '#28a745',     # Vert
+            'intermediaire': '#ffc107', # Jaune
+            'avance': '#dc3545',       # Rouge
+        }
+        return couleurs.get(self.niveau, '#6c757d')
+
+
+class Chapitre(models.Model):
+    """Modèle pour les chapitres d'un cours"""
+    
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, related_name='chapitres')
+    titre = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200)
+    contenu = models.TextField()
+    code_exemple = models.TextField(blank=True, help_text="Code d'exemple Python")
+    exercice = models.TextField(blank=True, help_text="Exercice pratique (optionnel)")
+    
+    # Ordre dans le cours
+    ordre = models.PositiveIntegerField(default=0)
+    
+    # Métadonnées
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Chapitre"
+        verbose_name_plural = "Chapitres"
+        ordering = ['cours', 'ordre']
+        unique_together = ['cours', 'slug']
+    
+    def __str__(self):
+        return f"{self.cours.titre} - {self.titre}"
+    
+    def get_absolute_url(self):
+        return reverse('blog:detail_chapitre', kwargs={
+            'cours_slug': self.cours.slug,
+            'chapitre_slug': self.slug
+        })
+    
+    def get_chapitre_precedent(self):
+        """Retourne le chapitre précédent"""
+        return self.cours.chapitres.filter(ordre__lt=self.ordre).order_by('-ordre').first()
+    
+    def get_chapitre_suivant(self):
+        """Retourne le chapitre suivant"""
+        return self.cours.chapitres.filter(ordre__gt=self.ordre).order_by('ordre').first()
