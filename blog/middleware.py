@@ -56,7 +56,7 @@ class AutoInitializeMiddleware:
             logger.info("Données d'exemple ajoutées")
             
             # Ajouter les cours Python
-            self.create_sample_courses()
+            os.system("python manage.py create_courses")
             logger.info("Cours Python ajoutés")
             
             logger.info("Base de données initialisée avec succès")
