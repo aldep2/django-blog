@@ -29,6 +29,13 @@ env_hosts = os.environ.get('ALLOWED_HOSTS')
 if env_hosts:
     ALLOWED_HOSTS.extend(env_hosts.split(','))
 
+# Configuration CSRF pour Railway
+CSRF_TRUSTED_ORIGINS = [
+    'https://web-production-42ab3.up.railway.app',
+    'https://*.railway.app',
+    'https://*.up.railway.app'
+]
+
 
 # Application definition
 
@@ -153,9 +160,14 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_SECONDS = 31536000
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # Désactiver temporairement pour Railway
+    # SECURE_SSL_REDIRECT = True
+    # SESSION_COOKIE_SECURE = True
+    # CSRF_COOKIE_SECURE = True
+
+# Configuration CSRF supplémentaire
+CSRF_COOKIE_HTTPONLY = False
+CSRF_USE_SESSIONS = False
 
 # Logging configuration
 LOGGING = {
