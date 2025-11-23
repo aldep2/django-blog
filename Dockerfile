@@ -19,11 +19,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le code
 COPY . .
 
-# Collecter les fichiers statiques
-RUN python manage.py collectstatic --noinput
+# Script de démarrage qui fait les migrations
+COPY start.sh .
+RUN chmod +x start.sh
 
 # Exposer le port
 EXPOSE 8000
 
 # Commande de démarrage
-CMD ["gunicorn", "monprojet.wsgi:application", "--bind", "0.0.0.0:$PORT"]
+CMD ["./start.sh"]
