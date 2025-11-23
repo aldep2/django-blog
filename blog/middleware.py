@@ -41,8 +41,8 @@ class AutoInitializeMiddleware:
             # Appliquer les migrations
             os.system("python manage.py migrate --noinput")
             
-            # Peupler si demandé
-            if os.environ.get('POPULATE_BLOG', 'false').lower() == 'true':
-                os.system("python manage.py populate_blog")
+            # Peupler automatiquement (forcer pour Railway)
+            os.system("python manage.py populate_blog")
+            logger.info("Données d'exemple ajoutées")
             
             logger.info("Base de données initialisée avec succès")
