@@ -4710,6 +4710,1126 @@ print(html)
 Ce package devra être modulaire, bien documenté et facilement extensible !'''
                 }
             )
+            
+            # Chapitre 5: Fichiers et Données
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='fichiers-donnees',
+                defaults={
+                    'titre': 'Fichiers et Données',
+                    'ordre': 4,
+                    'contenu': '''# Fichiers et Données en Python
+
+## 📁 Gestion des fichiers
+
+### Ouvrir et lire un fichier
+```python
+# Méthode basique
+fichier = open("mon_fichier.txt", "r", encoding="utf-8")
+contenu = fichier.read()
+fichier.close()
+
+# Méthode recommandée avec 'with' (fermeture automatique)
+with open("mon_fichier.txt", "r", encoding="utf-8") as fichier:
+    contenu = fichier.read()
+    print(contenu)
+# Le fichier se ferme automatiquement ici
+```
+
+### Modes d'ouverture
+```python
+# 'r' - Lecture seule (défaut)
+with open("fichier.txt", "r") as f:
+    contenu = f.read()
+
+# 'w' - Écriture (écrase le fichier existant)
+with open("fichier.txt", "w") as f:
+    f.write("Nouveau contenu")
+
+# 'a' - Ajout (ajoute à la fin du fichier)
+with open("fichier.txt", "a") as f:
+    f.write("\\nLigne ajoutée")
+
+# 'r+' - Lecture et écriture
+with open("fichier.txt", "r+") as f:
+    contenu = f.read()
+    f.write("Ajout")
+
+# 'b' - Mode binaire (pour images, vidéos, etc.)
+with open("image.jpg", "rb") as f:
+    donnees_binaires = f.read()
+```
+
+### Différentes méthodes de lecture
+```python
+with open("data.txt", "r", encoding="utf-8") as fichier:
+    # Lire tout le fichier
+    tout = fichier.read()
+    
+    # Revenir au début
+    fichier.seek(0)
+    
+    # Lire ligne par ligne
+    for ligne in fichier:
+        print(ligne.strip())  # strip() enlève le \\n
+    
+    # Lire toutes les lignes dans une liste
+    fichier.seek(0)
+    lignes = fichier.readlines()
+    
+    # Lire une seule ligne
+    fichier.seek(0)
+    premiere_ligne = fichier.readline()
+```
+
+### Écriture de fichiers
+```python
+# Écrire du texte
+with open("sortie.txt", "w", encoding="utf-8") as f:
+    f.write("Première ligne\\n")
+    f.write("Deuxième ligne\\n")
+    
+    # Écrire plusieurs lignes
+    lignes = ["Ligne 3\\n", "Ligne 4\\n", "Ligne 5\\n"]
+    f.writelines(lignes)
+
+# Écrire avec print (redirection)
+with open("log.txt", "w") as f:
+    print("Message de log", file=f)
+    print("Autre message", file=f)
+```
+
+## 🗂️ Manipulation de chemins avec pathlib
+
+```python
+from pathlib import Path
+
+# Créer un chemin
+chemin = Path("dossier/sous_dossier/fichier.txt")
+
+# Informations sur le chemin
+print(f"Nom du fichier: {chemin.name}")           # fichier.txt
+print(f"Extension: {chemin.suffix}")              # .txt
+print(f"Nom sans extension: {chemin.stem}")       # fichier
+print(f"Dossier parent: {chemin.parent}")         # dossier/sous_dossier
+print(f"Chemin absolu: {chemin.absolute()}")
+
+# Vérifications
+print(f"Existe: {chemin.exists()}")
+print(f"Est un fichier: {chemin.is_file()}")
+print(f"Est un dossier: {chemin.is_dir()}")
+
+# Création de dossiers
+nouveau_dossier = Path("projet/data")
+nouveau_dossier.mkdir(parents=True, exist_ok=True)  # Crée tous les parents
+
+# Lister le contenu d'un dossier
+dossier = Path(".")
+for element in dossier.iterdir():
+    if element.is_file():
+        print(f"Fichier: {element}")
+    else:
+        print(f"Dossier: {element}")
+
+# Recherche de fichiers
+for fichier_py in Path(".").rglob("*.py"):  # Récursif
+    print(fichier_py)
+```
+
+## 📊 Fichiers CSV
+
+### Lecture de CSV
+```python
+import csv
+
+# Lecture simple
+with open("data.csv", "r", encoding="utf-8") as fichier:
+    lecteur = csv.reader(fichier)
+    for ligne in lecteur:
+        print(ligne)  # Chaque ligne est une liste
+
+# Lecture avec headers (DictReader)
+with open("data.csv", "r", encoding="utf-8") as fichier:
+    lecteur = csv.DictReader(fichier)
+    for ligne in lecteur:
+        print(ligne)  # Chaque ligne est un dictionnaire
+        print(f"Nom: {ligne['nom']}, Age: {ligne['age']}")
+```
+
+### Écriture de CSV
+```python
+import csv
+
+# Écriture simple
+donnees = [
+    ["nom", "age", "ville"],
+    ["Alice", "25", "Paris"],
+    ["Bob", "30", "Lyon"],
+    ["Charlie", "35", "Marseille"]
+]
+
+with open("sortie.csv", "w", newline="", encoding="utf-8") as fichier:
+    ecrivain = csv.writer(fichier)
+    ecrivain.writerows(donnees)
+
+# Écriture avec DictWriter
+donnees_dict = [
+    {"nom": "Alice", "age": 25, "ville": "Paris"},
+    {"nom": "Bob", "age": 30, "ville": "Lyon"},
+    {"nom": "Charlie", "age": 35, "ville": "Marseille"}
+]
+
+with open("sortie_dict.csv", "w", newline="", encoding="utf-8") as fichier:
+    fieldnames = ["nom", "age", "ville"]
+    ecrivain = csv.DictWriter(fichier, fieldnames=fieldnames)
+    
+    ecrivain.writeheader()  # Écrit les en-têtes
+    ecrivain.writerows(donnees_dict)
+```
+
+## 🔄 Fichiers JSON
+
+### Lecture JSON
+```python
+import json
+
+# Depuis un fichier
+with open("config.json", "r", encoding="utf-8") as fichier:
+    data = json.load(fichier)
+    print(data)
+
+# Depuis une chaîne
+json_string = '{"nom": "Alice", "age": 25, "langages": ["Python", "JavaScript"]}'
+data = json.loads(json_string)
+print(data["nom"])  # Alice
+```
+
+### Écriture JSON
+```python
+import json
+
+# Données Python
+config = {
+    "app_name": "Mon App",
+    "version": "1.0.0",
+    "debug": True,
+    "database": {
+        "host": "localhost",
+        "port": 5432
+    },
+    "features": ["auth", "api", "dashboard"]
+}
+
+# Vers un fichier
+with open("config.json", "w", encoding="utf-8") as fichier:
+    json.dump(config, fichier, ensure_ascii=False, indent=2)
+
+# Vers une chaîne
+json_string = json.dumps(config, ensure_ascii=False, indent=2)
+print(json_string)
+```
+
+## 🗃️ Pickle - Sérialisation d'objets Python
+
+```python
+import pickle
+
+# Sauvegarder des objets Python
+data = {
+    "liste": [1, 2, 3, 4, 5],
+    "dictionnaire": {"a": 1, "b": 2},
+    "tuple": (10, 20, 30)
+}
+
+# Écriture
+with open("data.pickle", "wb") as fichier:
+    pickle.dump(data, fichier)
+
+# Lecture
+with open("data.pickle", "rb") as fichier:
+    data_chargee = pickle.load(fichier)
+    print(data_chargee)
+
+# Sérialisation de classes personnalisées
+class Personne:
+    def __init__(self, nom, age):
+        self.nom = nom
+        self.age = age
+    
+    def __repr__(self):
+        return f"Personne('{self.nom}', {self.age})"
+
+alice = Personne("Alice", 25)
+
+# Sauvegarder l'objet
+with open("personne.pickle", "wb") as f:
+    pickle.dump(alice, f)
+
+# Charger l'objet
+with open("personne.pickle", "rb") as f:
+    alice_chargee = pickle.load(f)
+    print(alice_chargee)  # Personne('Alice', 25)
+```
+
+## 📈 Traitement de données avec des fichiers
+
+### Analyser un fichier de logs
+```python
+import re
+from collections import Counter
+from datetime import datetime
+
+def analyser_logs(fichier_log):
+    """Analyse un fichier de logs web"""
+    ips = []
+    status_codes = []
+    urls = []
+    
+    pattern = r'(\\d+\\.\\d+\\.\\d+\\.\\d+) - - \\[(.*?)\\] "GET (.*?) HTTP/1\\.1" (\\d+) (\\d+)'
+    
+    with open(fichier_log, "r") as f:
+        for ligne in f:
+            match = re.match(pattern, ligne)
+            if match:
+                ip, date_str, url, status, size = match.groups()
+                ips.append(ip)
+                status_codes.append(int(status))
+                urls.append(url)
+    
+    # Statistiques
+    print(f"Total de requêtes: {len(ips)}")
+    print(f"IPs uniques: {len(set(ips))}")
+    print(f"\\nTop 5 IPs:")
+    for ip, count in Counter(ips).most_common(5):
+        print(f"  {ip}: {count} requêtes")
+    
+    print(f"\\nCodes de statut:")
+    for code, count in Counter(status_codes).most_common():
+        print(f"  {code}: {count}")
+
+# Exemple d'utilisation
+# analyser_logs("access.log")
+```
+
+### Traitement de fichier CSV volumineux
+```python
+import csv
+from collections import defaultdict
+
+def analyser_ventes(fichier_csv):
+    """Analyse un fichier de données de ventes"""
+    ventes_par_mois = defaultdict(float)
+    ventes_par_produit = defaultdict(float)
+    total_general = 0
+    
+    with open(fichier_csv, "r", encoding="utf-8") as f:
+        lecteur = csv.DictReader(f)
+        
+        for ligne in lecteur:
+            date = ligne["date"]
+            produit = ligne["produit"] 
+            montant = float(ligne["montant"])
+            
+            # Extraire le mois
+            mois = date[:7]  # Format YYYY-MM
+            
+            ventes_par_mois[mois] += montant
+            ventes_par_produit[produit] += montant
+            total_general += montant
+    
+    # Rapport
+    print(f"Chiffre d'affaires total: {total_general:.2f}€")
+    print(f"\\nVentes par mois:")
+    for mois in sorted(ventes_par_mois.keys()):
+        print(f"  {mois}: {ventes_par_mois[mois]:.2f}€")
+    
+    print(f"\\nTop 5 produits:")
+    for produit, montant in sorted(ventes_par_produit.items(), 
+                                   key=lambda x: x[1], reverse=True)[:5]:
+        print(f"  {produit}: {montant:.2f}€")
+```
+
+## 🔍 Gestion d'erreurs avec fichiers
+
+```python
+import os
+import shutil
+from pathlib import Path
+
+def copier_fichier_securise(source, destination):
+    """Copie un fichier avec gestion d'erreurs complète"""
+    try:
+        source_path = Path(source)
+        dest_path = Path(destination)
+        
+        # Vérifications
+        if not source_path.exists():
+            raise FileNotFoundError(f"Fichier source '{source}' introuvable")
+        
+        if not source_path.is_file():
+            raise ValueError(f"'{source}' n'est pas un fichier")
+        
+        # Créer le dossier de destination si nécessaire
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Vérifier l'espace disque (approximatif)
+        taille_source = source_path.stat().st_size
+        espace_libre = shutil.disk_usage(dest_path.parent).free
+        
+        if taille_source > espace_libre:
+            raise OSError("Espace disque insuffisant")
+        
+        # Copier le fichier
+        shutil.copy2(source, destination)
+        print(f"✅ Fichier copié: {source} -> {destination}")
+        return True
+        
+    except FileNotFoundError as e:
+        print(f"❌ Fichier introuvable: {e}")
+    except PermissionError as e:
+        print(f"❌ Permission refusée: {e}")
+    except OSError as e:
+        print(f"❌ Erreur système: {e}")
+    except Exception as e:
+        print(f"❌ Erreur inattendue: {e}")
+    
+    return False
+
+def nettoyer_dossier(dossier, extension, jours_anciens=30):
+    """Supprime les fichiers anciens d'une extension donnée"""
+    import time
+    
+    try:
+        dossier_path = Path(dossier)
+        if not dossier_path.exists():
+            print(f"Dossier {dossier} n'existe pas")
+            return
+        
+        fichiers_supprimes = 0
+        temps_limite = time.time() - (jours_anciens * 24 * 3600)
+        
+        for fichier in dossier_path.rglob(f"*.{extension}"):
+            if fichier.is_file():
+                temps_modif = fichier.stat().st_mtime
+                if temps_modif < temps_limite:
+                    try:
+                        fichier.unlink()  # Supprimer
+                        fichiers_supprimes += 1
+                        print(f"Supprimé: {fichier}")
+                    except PermissionError:
+                        print(f"Permission refusée: {fichier}")
+        
+        print(f"✅ {fichiers_supprimes} fichier(s) .{extension} supprimé(s)")
+        
+    except Exception as e:
+        print(f"❌ Erreur lors du nettoyage: {e}")
+```
+
+## 💾 Sauvegarde et compression
+
+```python
+import zipfile
+import tarfile
+import shutil
+from datetime import datetime
+
+def creer_sauvegarde(dossier_source, dossier_backup):
+    """Crée une archive de sauvegarde horodatée"""
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nom_archive = f"backup_{timestamp}.zip"
+        chemin_archive = Path(dossier_backup) / nom_archive
+        
+        # Créer le dossier de backup
+        Path(dossier_backup).mkdir(parents=True, exist_ok=True)
+        
+        with zipfile.ZipFile(chemin_archive, 'w', zipfile.ZIP_DEFLATED) as archive:
+            for fichier in Path(dossier_source).rglob('*'):
+                if fichier.is_file():
+                    # Chemin relatif dans l'archive
+                    chemin_relatif = fichier.relative_to(dossier_source)
+                    archive.write(fichier, chemin_relatif)
+        
+        taille = chemin_archive.stat().st_size
+        print(f"✅ Sauvegarde créée: {nom_archive} ({taille} octets)")
+        return str(chemin_archive)
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la sauvegarde: {e}")
+        return None
+
+def extraire_archive(archive, destination):
+    """Extrait une archive avec gestion d'erreurs"""
+    try:
+        archive_path = Path(archive)
+        dest_path = Path(destination)
+        
+        dest_path.mkdir(parents=True, exist_ok=True)
+        
+        if archive_path.suffix == '.zip':
+            with zipfile.ZipFile(archive, 'r') as z:
+                z.extractall(destination)
+        elif archive_path.suffix in ['.tar', '.tar.gz', '.tgz']:
+            with tarfile.open(archive, 'r') as t:
+                t.extractall(destination)
+        else:
+            raise ValueError(f"Format d'archive non supporté: {archive_path.suffix}")
+        
+        print(f"✅ Archive extraite dans: {destination}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de l'extraction: {e}")
+        return False
+```
+
+## 📋 Bonnes pratiques
+
+1. **Utilisez toujours `with open()`** pour la fermeture automatique
+2. **Spécifiez l'encodage** (`encoding="utf-8"`) pour éviter les problèmes
+3. **Gérez les erreurs** avec try/except appropriés
+4. **Utilisez `pathlib`** plutôt que les chaînes pour les chemins
+5. **Vérifiez l'existence** des fichiers avant manipulation
+6. **Libérez les ressources** (fermeture de fichiers, connexions)
+7. **Sauvegardez** avant les opérations destructives
+
+La manipulation de fichiers est essentielle pour traiter des données réelles ! 📊''',
+                    'code_exemple': '''# Exemple complet : Gestionnaire de journaux avec analyse
+
+import csv
+import json
+import re
+from datetime import datetime, timedelta
+from pathlib import Path
+from collections import Counter, defaultdict
+import zipfile
+
+class JournalManager:
+    """Gestionnaire complet pour les fichiers de journaux"""
+    
+    def __init__(self, dossier_logs="logs", dossier_archives="archives"):
+        self.dossier_logs = Path(dossier_logs)
+        self.dossier_archives = Path(dossier_archives)
+        self.dossier_logs.mkdir(exist_ok=True)
+        self.dossier_archives.mkdir(exist_ok=True)
+        
+        # Patterns pour différents types de logs
+        self.patterns = {
+            'apache': r'(\\S+) \\S+ \\S+ \\[(.*?)\\] "([A-Z]+) (.*?) HTTP/\\d\\.\\d" (\\d+) (\\d+)',
+            'custom': r'\\[(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})\\] (\\w+): (.+)'
+        }
+    
+    def ecrire_log(self, message, niveau="INFO", fichier="app.log"):
+        """Écrit un message dans un fichier de log"""
+        try:
+            chemin_log = self.dossier_logs / fichier
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ligne_log = f"[{timestamp}] {niveau}: {message}\\n"
+            
+            with open(chemin_log, "a", encoding="utf-8") as f:
+                f.write(ligne_log)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Erreur lors de l'écriture du log: {e}")
+            return False
+    
+    def lire_logs(self, fichier, type_log="custom", limite=None):
+        """Lit et parse un fichier de logs"""
+        try:
+            chemin_log = self.dossier_logs / fichier
+            if not chemin_log.exists():
+                print(f"Fichier {fichier} introuvable")
+                return []
+            
+            pattern = self.patterns.get(type_log, self.patterns['custom'])
+            logs_parses = []
+            
+            with open(chemin_log, "r", encoding="utf-8") as f:
+                lignes = f.readlines()
+                if limite:
+                    lignes = lignes[-limite:]  # Dernières lignes
+                
+                for ligne in lignes:
+                    match = re.match(pattern, ligne.strip())
+                    if match:
+                        if type_log == "custom":
+                            timestamp, niveau, message = match.groups()
+                            logs_parses.append({
+                                'timestamp': timestamp,
+                                'niveau': niveau,
+                                'message': message,
+                                'ligne_complete': ligne.strip()
+                            })
+                        elif type_log == "apache":
+                            ip, timestamp, methode, url, status, taille = match.groups()
+                            logs_parses.append({
+                                'ip': ip,
+                                'timestamp': timestamp,
+                                'methode': methode,
+                                'url': url,
+                                'status': int(status),
+                                'taille': int(taille) if taille != '-' else 0,
+                                'ligne_complete': ligne.strip()
+                            })
+            
+            print(f"✅ {len(logs_parses)} entrées de log parsées")
+            return logs_parses
+            
+        except Exception as e:
+            print(f"Erreur lors de la lecture des logs: {e}")
+            return []
+    
+    def analyser_logs(self, fichier, type_log="custom"):
+        """Analyse complète d'un fichier de logs"""
+        logs = self.lire_logs(fichier, type_log)
+        if not logs:
+            return None
+        
+        if type_log == "custom":
+            return self._analyser_logs_custom(logs)
+        elif type_log == "apache":
+            return self._analyser_logs_apache(logs)
+    
+    def _analyser_logs_custom(self, logs):
+        """Analyse spécifique pour les logs custom"""
+        niveaux = Counter(log['niveau'] for log in logs)
+        
+        # Messages par heure
+        messages_par_heure = defaultdict(int)
+        for log in logs:
+            try:
+                dt = datetime.strptime(log['timestamp'], "%Y-%m-%d %H:%M:%S")
+                heure = dt.strftime("%H:00")
+                messages_par_heure[heure] += 1
+            except ValueError:
+                continue
+        
+        # Mots les plus fréquents dans les messages
+        mots = []
+        for log in logs:
+            mots.extend(log['message'].lower().split())
+        mots_frequents = Counter(mots).most_common(10)
+        
+        return {
+            'total_entrees': len(logs),
+            'niveaux': dict(niveaux),
+            'messages_par_heure': dict(messages_par_heure),
+            'mots_frequents': mots_frequents
+        }
+    
+    def _analyser_logs_apache(self, logs):
+        """Analyse spécifique pour les logs Apache"""
+        # IPs les plus actives
+        ips = Counter(log['ip'] for log in logs)
+        
+        # Codes de statut
+        status_codes = Counter(log['status'] for log in logs)
+        
+        # URLs les plus demandées
+        urls = Counter(log['url'] for log in logs)
+        
+        # Trafic par heure
+        trafic_par_heure = defaultdict(int)
+        for log in logs:
+            try:
+                # Format: 10/Oct/2023:14:55:36 +0000
+                timestamp_str = log['timestamp']
+                # Extraction simple de l'heure
+                if ':' in timestamp_str:
+                    heure = timestamp_str.split(':')[1]
+                    trafic_par_heure[f"{heure}:00"] += 1
+            except (ValueError, IndexError):
+                continue
+        
+        return {
+            'total_requetes': len(logs),
+            'ips_uniques': len(set(log['ip'] for log in logs)),
+            'top_ips': ips.most_common(5),
+            'status_codes': dict(status_codes),
+            'top_urls': urls.most_common(10),
+            'trafic_par_heure': dict(trafic_par_heure)
+        }
+    
+    def exporter_analyse(self, fichier_log, format_sortie="json", type_log="custom"):
+        """Exporte l'analyse dans différents formats"""
+        try:
+            analyse = self.analyser_logs(fichier_log, type_log)
+            if not analyse:
+                return False
+            
+            nom_base = Path(fichier_log).stem
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            if format_sortie == "json":
+                fichier_sortie = f"analyse_{nom_base}_{timestamp}.json"
+                chemin_sortie = self.dossier_archives / fichier_sortie
+                
+                with open(chemin_sortie, "w", encoding="utf-8") as f:
+                    json.dump(analyse, f, ensure_ascii=False, indent=2, default=str)
+            
+            elif format_sortie == "csv":
+                fichier_sortie = f"analyse_{nom_base}_{timestamp}.csv"
+                chemin_sortie = self.dossier_archives / fichier_sortie
+                
+                # Conversion en format tabulaire pour CSV
+                with open(chemin_sortie, "w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    
+                    # En-têtes et données selon le type d'analyse
+                    if 'niveaux' in analyse:  # Logs custom
+                        writer.writerow(["Métrique", "Valeur"])
+                        writer.writerow(["Total entrées", analyse['total_entrees']])
+                        writer.writerow([])
+                        writer.writerow(["Niveau", "Nombre"])
+                        for niveau, count in analyse['niveaux'].items():
+                            writer.writerow([niveau, count])
+                    
+                    elif 'top_ips' in analyse:  # Logs Apache
+                        writer.writerow(["Métrique", "Valeur"])
+                        writer.writerow(["Total requêtes", analyse['total_requetes']])
+                        writer.writerow(["IPs uniques", analyse['ips_uniques']])
+                        writer.writerow([])
+                        writer.writerow(["IP", "Requêtes"])
+                        for ip, count in analyse['top_ips']:
+                            writer.writerow([ip, count])
+            
+            print(f"✅ Analyse exportée: {fichier_sortie}")
+            return str(chemin_sortie)
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de l'export: {e}")
+            return None
+    
+    def archiver_logs_anciens(self, jours_anciens=7):
+        """Archive les logs de plus de X jours"""
+        try:
+            date_limite = datetime.now() - timedelta(days=jours_anciens)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nom_archive = f"logs_archive_{timestamp}.zip"
+            chemin_archive = self.dossier_archives / nom_archive
+            
+            fichiers_archives = []
+            
+            with zipfile.ZipFile(chemin_archive, 'w', zipfile.ZIP_DEFLATED) as archive:
+                for fichier_log in self.dossier_logs.glob("*.log"):
+                    # Vérifier la date de modification
+                    date_modif = datetime.fromtimestamp(fichier_log.stat().st_mtime)
+                    
+                    if date_modif < date_limite:
+                        # Ajouter à l'archive
+                        archive.write(fichier_log, fichier_log.name)
+                        fichiers_archives.append(fichier_log.name)
+                        
+                        # Supprimer le fichier original
+                        fichier_log.unlink()
+            
+            if fichiers_archives:
+                print(f"✅ {len(fichiers_archives)} fichiers archivés dans {nom_archive}")
+                return str(chemin_archive)
+            else:
+                # Supprimer l'archive vide
+                chemin_archive.unlink()
+                print("Aucun fichier ancien à archiver")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Erreur lors de l'archivage: {e}")
+            return None
+    
+    def generer_rapport(self, fichier_log, type_log="custom"):
+        """Génère un rapport détaillé en format texte"""
+        try:
+            analyse = self.analyser_logs(fichier_log, type_log)
+            if not analyse:
+                return None
+            
+            nom_rapport = f"rapport_{Path(fichier_log).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            chemin_rapport = self.dossier_archives / nom_rapport
+            
+            with open(chemin_rapport, "w", encoding="utf-8") as f:
+                f.write(f"RAPPORT D'ANALYSE - {fichier_log}\\n")
+                f.write(f"Généré le: {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}\\n")
+                f.write("="*60 + "\\n\\n")
+                
+                if type_log == "custom":
+                    f.write(f"Total d'entrées: {analyse['total_entrees']}\\n\\n")
+                    
+                    f.write("RÉPARTITION PAR NIVEAU:\\n")
+                    for niveau, count in sorted(analyse['niveaux'].items()):
+                        pourcentage = (count / analyse['total_entrees']) * 100
+                        f.write(f"  {niveau:8}: {count:6} ({pourcentage:5.1f}%)\\n")
+                    
+                    f.write("\\nACTIVITÉ PAR HEURE:\\n")
+                    for heure in sorted(analyse['messages_par_heure'].keys()):
+                        count = analyse['messages_par_heure'][heure]
+                        f.write(f"  {heure}: {count:4} messages\\n")
+                    
+                    f.write("\\nMOTS LES PLUS FRÉQUENTS:\\n")
+                    for mot, freq in analyse['mots_frequents']:
+                        f.write(f"  {mot:15}: {freq:4}\\n")
+                
+                elif type_log == "apache":
+                    f.write(f"Total de requêtes: {analyse['total_requetes']}\\n")
+                    f.write(f"Adresses IP uniques: {analyse['ips_uniques']}\\n\\n")
+                    
+                    f.write("TOP 5 ADRESSES IP:\\n")
+                    for ip, count in analyse['top_ips']:
+                        f.write(f"  {ip:15}: {count:6} requêtes\\n")
+                    
+                    f.write("\\nCODES DE STATUT:\\n")
+                    for status, count in sorted(analyse['status_codes'].items()):
+                        pourcentage = (count / analyse['total_requetes']) * 100
+                        f.write(f"  {status:3}: {count:6} ({pourcentage:5.1f}%)\\n")
+                    
+                    f.write("\\nTOP 10 URLs:\\n")
+                    for url, count in analyse['top_urls']:
+                        f.write(f"  {count:4}: {url}\\n")
+            
+            print(f"✅ Rapport généré: {nom_rapport}")
+            return str(chemin_rapport)
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de la génération du rapport: {e}")
+            return None
+
+# Démonstration complète
+def demo_journal_manager():
+    """Démonstration complète du gestionnaire de journaux"""
+    jm = JournalManager()
+    
+    # Créer des logs de test
+    print("=== Création de logs de test ===")
+    messages_test = [
+        ("Application démarrée", "INFO"),
+        ("Utilisateur Alice connecté", "INFO"),
+        ("Tentative de connexion échouée pour user123", "WARNING"),
+        ("Erreur de base de données: timeout", "ERROR"),
+        ("Utilisateur Bob déconnecté", "INFO"),
+        ("Sauvegarde automatique effectuée", "INFO"),
+        ("Tentative d'accès non autorisé depuis 192.168.1.100", "WARNING"),
+        ("Système surchargé: 95% CPU", "ERROR")
+    ]
+    
+    for message, niveau in messages_test:
+        jm.ecrire_log(message, niveau, "app.log")
+    
+    print("✅ Logs de test créés\\n")
+    
+    # Analyser les logs
+    print("=== Analyse des logs ===")
+    analyse = jm.analyser_logs("app.log", "custom")
+    if analyse:
+        print(f"Total d'entrées: {analyse['total_entrees']}")
+        print(f"Niveaux: {analyse['niveaux']}")
+        print(f"Mots fréquents: {analyse['mots_frequents'][:5]}")
+    
+    print()
+    
+    # Exporter l'analyse
+    print("=== Export de l'analyse ===")
+    fichier_json = jm.exporter_analyse("app.log", "json", "custom")
+    fichier_csv = jm.exporter_analyse("app.log", "csv", "custom")
+    
+    # Générer un rapport
+    print("\\n=== Génération du rapport ===")
+    rapport = jm.generer_rapport("app.log", "custom")
+    
+    # Lister les fichiers créés
+    print("\\n=== Fichiers générés ===")
+    print(f"Logs: {list(jm.dossier_logs.glob('*'))}")
+    print(f"Archives: {list(jm.dossier_archives.glob('*'))}")
+
+if __name__ == "__main__":
+    demo_journal_manager()''',
+                    'exercice': '''## 🎯 Exercice : Système de gestion de données étudiants
+
+**Objectif :** Créer un système complet de gestion de données d'étudiants avec support de multiples formats de fichiers
+
+### Partie 1 : Structure des données
+
+Créez les classes suivantes :
+
+```python
+from dataclasses import dataclass
+from datetime import date
+from typing import List, Dict, Optional
+
+@dataclass
+class Etudiant:
+    nom: str
+    prenom: str
+    age: int
+    email: str
+    date_inscription: date
+    notes: Dict[str, float]  # {matière: note}
+    
+    def moyenne(self) -> float:
+        # Calculer la moyenne générale
+        pass
+    
+    def mention(self) -> str:
+        # Retourner la mention selon la moyenne
+        pass
+
+class GestionnaireEtudiants:
+    def __init__(self):
+        self.etudiants: List[Etudiant] = []
+    
+    def ajouter_etudiant(self, etudiant: Etudiant):
+        # À implémenter
+        pass
+    
+    def rechercher_etudiant(self, nom: str, prenom: str) -> Optional[Etudiant]:
+        # À implémenter
+        pass
+    
+    def statistiques_classe(self) -> Dict:
+        # À implémenter
+        pass
+```
+
+### Partie 2 : Import/Export de données
+
+Implémentez les méthodes suivantes :
+
+#### Import CSV
+```python
+def importer_csv(self, fichier: str) -> bool:
+    """
+    Importe les étudiants depuis un fichier CSV
+    Format: nom,prenom,age,email,date_inscription,math,francais,histoire,sciences
+    """
+    # À implémenter avec gestion d'erreurs
+    pass
+```
+
+#### Export CSV
+```python
+def exporter_csv(self, fichier: str) -> bool:
+    """Exporte les étudiants vers un fichier CSV"""
+    # À implémenter
+    pass
+```
+
+#### Import/Export JSON
+```python
+def sauvegarder_json(self, fichier: str) -> bool:
+    """Sauvegarde en format JSON avec toutes les données"""
+    # À implémenter - gérer la sérialisation des dates
+    pass
+
+def charger_json(self, fichier: str) -> bool:
+    """Charge depuis un fichier JSON"""
+    # À implémenter - gérer la désérialisation des dates
+    pass
+```
+
+#### Sauvegarde binaire
+```python
+def sauvegarder_pickle(self, fichier: str) -> bool:
+    """Sauvegarde binaire avec pickle"""
+    pass
+
+def charger_pickle(self, fichier: str) -> bool:
+    """Charge depuis un fichier pickle"""
+    pass
+```
+
+### Partie 3 : Analyse et rapports
+
+#### Génération de rapports
+```python
+def generer_rapport_classe(self, fichier: str = "rapport_classe.txt"):
+    """
+    Génère un rapport détaillé de la classe
+    Inclure:
+    - Nombre total d'étudiants
+    - Moyenne générale de la classe
+    - Répartition des mentions
+    - Top 5 des meilleurs étudiants
+    - Statistiques par matière
+    """
+    pass
+
+def generer_bulletin_individuel(self, nom: str, prenom: str, fichier: str = None):
+    """
+    Génère le bulletin d'un étudiant
+    Format: nom_prenom_bulletin.txt
+    """
+    pass
+```
+
+#### Statistiques avancées
+```python
+def analyser_matieres(self) -> Dict:
+    """
+    Analyse les performances par matière:
+    - Moyenne par matière
+    - Écart-type
+    - Note min/max
+    - Nombre d'étudiants par mention
+    """
+    pass
+
+def identifier_risques_echec(self) -> List[Etudiant]:
+    """Identifie les étudiants à risque (moyenne < 8)"""
+    pass
+
+def etudiants_excellents(self) -> List[Etudiant]:
+    """Étudiants avec mention Très Bien (moyenne >= 16)"""
+    pass
+```
+
+### Partie 4 : Sauvegarde et historique
+
+```python
+def creer_sauvegarde_quotidienne(self):
+    """
+    Crée une sauvegarde horodatée
+    Format: backup_YYYYMMDD_HHMMSS.json
+    """
+    pass
+
+def restaurer_sauvegarde(self, fichier_sauvegarde: str) -> bool:
+    """Restaure depuis une sauvegarde"""
+    pass
+
+def nettoyer_anciennes_sauvegardes(self, jours_conservation: int = 30):
+    """Supprime les sauvegardes de plus de X jours"""
+    pass
+```
+
+### Partie 5 : Interface utilisateur
+
+Créez un menu interactif :
+
+```python
+def menu_principal():
+    """
+    Menu principal avec options:
+    1. Ajouter un étudiant
+    2. Rechercher un étudiant
+    3. Afficher tous les étudiants
+    4. Importer CSV
+    5. Exporter CSV
+    6. Sauvegarder JSON
+    7. Charger JSON
+    8. Générer rapport de classe
+    9. Générer bulletin individuel
+    10. Statistiques par matière
+    11. Créer sauvegarde
+    12. Quitter
+    """
+    pass
+```
+
+### Données de test
+
+Créez un fichier `etudiants.csv` avec des données de test :
+
+```csv
+nom,prenom,age,email,date_inscription,math,francais,histoire,sciences
+Dupont,Alice,20,alice.dupont@email.com,2023-09-01,15.5,14.0,16.0,17.5
+Martin,Bob,19,bob.martin@email.com,2023-09-01,12.0,13.5,11.0,14.0
+Bernard,Charlie,21,charlie.bernard@email.com,2023-09-01,18.0,16.5,17.0,19.0
+Durand,Diana,20,diana.durand@email.com,2023-09-01,8.0,9.5,7.5,10.0
+Moreau,Eve,19,eve.moreau@email.com,2023-09-01,16.0,18.0,15.5,16.5
+```
+
+### Fonctionnalités bonus
+
+1. **Validation des données** :
+   - Email valide
+   - Âge cohérent (16-30 ans)
+   - Notes entre 0 et 20
+   - Date d'inscription valide
+
+2. **Gestion des erreurs** :
+   - Fichiers corrompus
+   - Données manquantes
+   - Permissions de fichier
+   - Espace disque insuffisant
+
+3. **Performance** :
+   - Import/export de gros fichiers
+   - Recherche optimisée
+   - Cache des calculs
+
+4. **Export avancé** :
+   - Export HTML avec CSS
+   - Export PDF (si bibliothèque disponible)
+   - Export Excel
+
+5. **Sécurité** :
+   - Chiffrement des données sensibles
+   - Validation des entrées
+   - Logs d'audit
+
+### Tests à réaliser
+
+```python
+def test_import_export():
+    """Test d'import/export dans différents formats"""
+    pass
+
+def test_calculs_statistiques():
+    """Test des calculs de moyennes et statistiques"""
+    pass
+
+def test_gestion_erreurs():
+    """Test de la gestion d'erreurs"""
+    pass
+
+def test_sauvegarde_restauration():
+    """Test du système de sauvegarde"""
+    pass
+```
+
+### Exemple d'utilisation attendue
+
+```python
+# Créer le gestionnaire
+gestionnaire = GestionnaireEtudiants()
+
+# Importer des données
+gestionnaire.importer_csv("etudiants.csv")
+
+# Ajouter un étudiant
+nouvel_etudiant = Etudiant(
+    nom="Nouveau",
+    prenom="Student", 
+    age=20,
+    email="student@email.com",
+    date_inscription=date.today(),
+    notes={"math": 15.0, "francais": 14.0}
+)
+gestionnaire.ajouter_etudiant(nouvel_etudiant)
+
+# Générer des rapports
+gestionnaire.generer_rapport_classe()
+gestionnaire.generer_bulletin_individuel("Dupont", "Alice")
+
+# Statistiques
+stats = gestionnaire.analyser_matieres()
+print(f"Moyenne math: {stats['math']['moyenne']}")
+
+# Sauvegarde
+gestionnaire.creer_sauvegarde_quotidienne()
+```
+
+**Critères de réussite :**
+- Import/export fonctionnel pour CSV, JSON, Pickle
+- Calculs statistiques corrects
+- Gestion d'erreurs robuste
+- Rapports bien formatés
+- Interface utilisateur intuitive
+- Performance acceptable (< 1s pour 1000 étudiants)
+
+Ce système doit être complet, robuste et facile à utiliser ! 🎓'''
+                }
+            )
 
         # Cours 4: Python Expert (renommé et réordonné)  
         cours_expert, created = Cours.objects.get_or_create(
