@@ -4,20 +4,20 @@ Optimisé pour le déploiement Railway.
 """
 
 import os
-from decouple import config, Csv
-from dj_database_url import parse as db_url
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-here-change-this-in-production')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+# Configuration ALLOWED_HOSTS pour Railway
+import os
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
 # Application definition
@@ -67,14 +67,21 @@ WSGI_APPLICATION = 'monprojet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Configuration pour Railway (PostgreSQL) et développement local (SQLite)
-import dj_database_url
-default_db_url = 'sqlite:///' + str(BASE_DIR / 'db.sqlite3')
-
-DATABASE_URL = os.environ.get('DATABASE_URL', default_db_url)
-DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL)
-}
+# Database - Configuration simple pour Railway
+if 'DATABASE_URL' in os.environ:
+    # Configuration PostgreSQL pour Railway
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+    }
+else:
+    # Configuration SQLite pour développement local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
