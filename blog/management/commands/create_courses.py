@@ -2083,95 +2083,1574 @@ class Etudiant(Personne):
         pass
 ```
 
-#### 3. Classe `Professeur` (hérite de Personne)
+**Conseils :**
+- Utilisez l'héritage pour éviter la duplication
+- Implémentez les propriétés avec `@property`
+- Gérez les erreurs (étudiant inexistant, note invalide)
+- Documentez vos classes avec des docstrings'''
+                }
+            )
+            
+            # Chapitre 2: Héritage et Polymorphisme
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='heritage-polymorphisme',
+                defaults={
+                    'titre': 'Héritage et Polymorphisme',
+                    'ordre': 1,
+                    'contenu': '''# Héritage et Polymorphisme
+
+## 🧬 L'Héritage - Concept de base
+
+L'**héritage** permet à une classe d'hériter des attributs et méthodes d'une autre classe. La classe qui hérite s'appelle **classe fille** ou **sous-classe**, et celle dont elle hérite est la **classe mère** ou **super-classe**.
+
+## 📚 Héritage simple
+
 ```python
-class Professeur(Personne):
-    def __init__(self, nom, prenom, age, email, matiere, salaire):
-        # Constructeur avec matière enseignée et salaire
+# Classe parent (ou classe mère)
+class Animal:
+    def __init__(self, nom, age):
+        self.nom = nom
+        self.age = age
+        self.energie = 100
+    
+    def manger(self, quantite):
+        self.energie += quantite
+        print(f"{self.nom} mange et récupère {quantite} d'énergie")
+    
+    def dormir(self, heures):
+        self.energie += heures * 10
+        print(f"{self.nom} dort {heures}h et récupère de l'énergie")
+    
+    def se_presenter(self):
+        print(f"Je suis {self.nom}, j'ai {self.age} ans")
+
+# Classe enfant (ou classe fille)
+class Chien(Animal):  # Chien hérite d'Animal
+    def __init__(self, nom, age, race):
+        super().__init__(nom, age)  # Appel du constructeur parent
+        self.race = race
+        self.dresse = False
+    
+    def aboyer(self):
+        print(f"{self.nom} fait: Woof woof!")
+        self.energie -= 5
+    
+    def rapporter_balle(self):
+        if self.dresse:
+            print(f"{self.nom} rapporte la balle!")
+            self.energie -= 15
+        else:
+            print(f"{self.nom} ne sait pas encore rapporter la balle")
+    
+    # Redéfinir une méthode du parent (override)
+    def se_presenter(self):
+        super().se_presenter()  # Appeler la méthode du parent
+        print(f"Je suis un {self.race}")
+
+class Chat(Animal):
+    def __init__(self, nom, age, couleur):
+        super().__init__(nom, age)
+        self.couleur = couleur
+        self.griffes_sorties = False
+    
+    def miauler(self):
+        print(f"{self.nom} fait: Miaou!")
+        self.energie -= 3
+    
+    def griffer(self):
+        if self.griffes_sorties:
+            print(f"{self.nom} griffe avec ses griffes!")
+            self.energie -= 10
+        else:
+            print(f"{self.nom} sort ses griffes d'abord")
+            self.griffes_sorties = True
+
+# Utilisation
+rex = Chien("Rex", 3, "Labrador")
+felix = Chat("Félix", 2, "noir")
+
+# Méthodes héritées
+rex.manger(20)
+felix.dormir(2)
+
+# Méthodes spécifiques
+rex.aboyer()
+felix.miauler()
+
+# Méthode redéfinie
+rex.se_presenter()
+```
+
+## 🎭 Polymorphisme
+
+Le **polymorphisme** permet d'utiliser une même interface (méthode) avec des objets de classes différentes, chacun ayant sa propre implémentation.
+
+```python
+class Forme:
+    def __init__(self, couleur):
+        self.couleur = couleur
+    
+    def calculer_aire(self):
+        raise NotImplementedError("Cette méthode doit être implémentée par les sous-classes")
+    
+    def afficher_info(self):
+        aire = self.calculer_aire()
+        print(f"Forme {self.couleur} - Aire: {aire}")
+
+class Rectangle(Forme):
+    def __init__(self, couleur, longueur, largeur):
+        super().__init__(couleur)
+        self.longueur = longueur
+        self.largeur = largeur
+    
+    def calculer_aire(self):
+        return self.longueur * self.largeur
+
+class Cercle(Forme):
+    def __init__(self, couleur, rayon):
+        super().__init__(couleur)
+        self.rayon = rayon
+    
+    def calculer_aire(self):
+        return 3.14159 * self.rayon ** 2
+
+class Triangle(Forme):
+    def __init__(self, couleur, base, hauteur):
+        super().__init__(couleur)
+        self.base = base
+        self.hauteur = hauteur
+    
+    def calculer_aire(self):
+        return (self.base * self.hauteur) / 2
+
+# Polymorphisme en action !
+formes = [
+    Rectangle("rouge", 5, 3),
+    Cercle("bleu", 4),
+    Triangle("vert", 6, 8)
+]
+
+# Même méthode, comportement différent selon l'objet
+for forme in formes:
+    forme.afficher_info()  # Polymorphisme !
+
+# Sortie:
+# Forme rouge - Aire: 15
+# Forme bleu - Aire: 50.26544
+# Forme vert - Aire: 24.0
+```
+
+## 🏗️ Héritage multiple
+
+Python permet l'héritage multiple (hériter de plusieurs classes) :
+
+```python
+class Voleur:
+    def __init__(self):
+        self.discretion = 50
+        self.vitesse = 30
+    
+    def voler(self):
+        print("Vol discret dans l'ombre...")
+        return self.discretion
+
+class Guerrier:
+    def __init__(self):
+        self.force = 80
+        self.defense = 60
+    
+    def attaquer(self):
+        print("Attaque puissante!")
+        return self.force
+
+class Assassin(Voleur, Guerrier):  # Héritage multiple
+    def __init__(self, nom):
+        super().__init__()  # Appelle le premier parent (Voleur)
+        Guerrier.__init__(self)  # Appel explicite du second parent
+        self.nom = nom
+        self.stealth_attack = True
+    
+    def attaque_sournoise(self):
+        if self.stealth_attack:
+            degats = self.voler() + self.attaquer()
+            print(f"{self.nom} fait une attaque sournoise! Dégâts: {degats}")
+            return degats
+
+# Utilisation
+ninja = Assassin("Kage")
+ninja.attaque_sournoise()
+```
+
+## 🔍 Méthodes de classe et statiques dans l'héritage
+
+```python
+class Vehicule:
+    nombre_vehicules = 0
+    
+    def __init__(self, marque, modele):
+        self.marque = marque
+        self.modele = modele
+        Vehicule.nombre_vehicules += 1
+    
+    @classmethod
+    def get_nombre_vehicules(cls):
+        return cls.nombre_vehicules
+    
+    @staticmethod
+    def convertir_kmh_ms(vitesse_kmh):
+        return vitesse_kmh / 3.6
+
+class Voiture(Vehicule):
+    nombre_voitures = 0
+    
+    def __init__(self, marque, modele, nb_portes):
+        super().__init__(marque, modele)
+        self.nb_portes = nb_portes
+        Voiture.nombre_voitures += 1
+    
+    @classmethod
+    def get_nombre_voitures(cls):
+        return cls.nombre_voitures
+
+# Test
+v1 = Vehicule("Generic", "Model1")
+c1 = Voiture("Toyota", "Corolla", 4)
+c2 = Voiture("BMW", "X5", 5)
+
+print(f"Total véhicules: {Vehicule.get_nombre_vehicules()}")  # 3
+print(f"Total voitures: {Voiture.get_nombre_voitures()}")    # 2
+
+# Méthode statique accessible depuis toutes les classes
+print(f"100 km/h = {Voiture.convertir_kmh_ms(100)} m/s")
+```
+
+## 🎯 Propriétés et héritage
+
+```python
+class Personne:
+    def __init__(self, nom, age):
+        self._nom = nom
+        self._age = age
+    
+    @property
+    def nom(self):
+        return self._nom
+    
+    @nom.setter
+    def nom(self, valeur):
+        if isinstance(valeur, str) and valeur.strip():
+            self._nom = valeur.strip()
+        else:
+            raise ValueError("Le nom doit être une chaîne non vide")
+    
+    @property
+    def age(self):
+        return self._age
+    
+    @age.setter
+    def age(self, valeur):
+        if isinstance(valeur, int) and 0 <= valeur <= 120:
+            self._age = valeur
+        else:
+            raise ValueError("L'âge doit être entre 0 et 120")
+
+class Employe(Personne):
+    def __init__(self, nom, age, salaire):
+        super().__init__(nom, age)
+        self._salaire = salaire
+    
+    @property
+    def salaire(self):
+        return self._salaire
+    
+    @salaire.setter
+    def salaire(self, valeur):
+        if isinstance(valeur, (int, float)) and valeur >= 0:
+            self._salaire = valeur
+        else:
+            raise ValueError("Le salaire doit être positif")
+    
+    @property
+    def salaire_annuel(self):
+        return self._salaire * 12
+
+# Utilisation avec validation automatique
+emp = Employe("Alice Dupont", 30, 3500)
+print(f"Salaire annuel: {emp.salaire_annuel}€")
+
+# Les setters héritées fonctionnent toujours
+emp.age = 31  # Validation automatique
+emp.salaire = 3800  # Validation automatique
+```
+
+## 🧪 Abstract Base Classes (ABC)
+
+Les classes abstraites définissent une interface que les sous-classes doivent implémenter :
+
+```python
+from abc import ABC, abstractmethod
+
+class Instrument(ABC):
+    def __init__(self, nom):
+        self.nom = nom
+    
+    @abstractmethod
+    def jouer(self):
+        """Méthode abstraite - doit être implémentée"""
         pass
     
-    def donner_note(self, etudiant, note):
-        # Donner une note à un étudiant
+    @abstractmethod
+    def accorder(self):
+        """Méthode abstraite - doit être implémentée"""
         pass
     
-    def voir_ses_etudiants(self, classe):
-        # Voir les étudiants de sa classe
+    def presenter(self):
+        """Méthode concrète - peut être utilisée telle quelle"""
+        print(f"Ceci est un {self.nom}")
+
+class Piano(Instrument):
+    def jouer(self):
+        print("♪ Joue une mélodie au piano ♪")
+    
+    def accorder(self):
+        print("Accordage des cordes du piano...")
+
+class Guitare(Instrument):
+    def __init__(self, nom, nb_cordes=6):
+        super().__init__(nom)
+        self.nb_cordes = nb_cordes
+    
+    def jouer(self):
+        print("♫ Gratte les cordes de la guitare ♫")
+    
+    def accorder(self):
+        print(f"Accordage des {self.nb_cordes} cordes...")
+
+# Impossible de créer une instance d'Instrument directement
+# instrument = Instrument("Test")  # Erreur !
+
+# Mais on peut créer des instances des sous-classes
+piano = Piano("Piano à queue")
+guitare = Guitare("Guitare classique")
+
+instruments = [piano, guitare]
+for instrument in instruments:
+    instrument.presenter()
+    instrument.accorder()
+    instrument.jouer()
+    print()
+```
+
+## 💡 Bonnes pratiques
+
+1. **Utilisez `super()`** pour appeler les méthodes du parent
+2. **Privilégiez la composition à l'héritage** quand c'est approprié
+3. **Respectez le principe de substitution de Liskov**
+4. **Documentez les contrats des méthodes abstraites**
+5. **Évitez l'héritage multiple complexe**
+
+L'héritage et le polymorphisme sont des outils puissants pour créer du code réutilisable et maintenable !''',
+                    'code_exemple': '''# Exemple complet : Système de gestion d'employés avec héritage
+
+from abc import ABC, abstractmethod
+from datetime import datetime, date
+
+class Personne:
+    """Classe de base représentant une personne"""
+    
+    def __init__(self, nom, prenom, date_naissance, email):
+        self._nom = nom
+        self._prenom = prenom
+        self._date_naissance = date_naissance
+        self._email = email
+    
+    @property
+    def nom_complet(self):
+        return f"{self._prenom} {self._nom}"
+    
+    @property
+    def age(self):
+        today = date.today()
+        return today.year - self._date_naissance.year - (
+            (today.month, today.day) < (self._date_naissance.month, self._date_naissance.day)
+        )
+    
+    def se_presenter(self):
+        return f"Je suis {self.nom_complet}, {self.age} ans"
+    
+    def __str__(self):
+        return f"{self.nom_complet} ({self.age} ans)"
+
+class Employe(Personne, ABC):
+    """Classe abstraite pour tous les employés"""
+    
+    def __init__(self, nom, prenom, date_naissance, email, numero_employe, date_embauche):
+        super().__init__(nom, prenom, date_naissance, email)
+        self.numero_employe = numero_employe
+        self.date_embauche = date_embauche
+        self.actif = True
+    
+    @property
+    def anciennete(self):
+        """Calcule l'ancienneté en années"""
+        today = date.today()
+        return today.year - self.date_embauche.year
+    
+    @abstractmethod
+    def calculer_salaire(self):
+        """Méthode abstraite pour calculer le salaire"""
+        pass
+    
+    @abstractmethod
+    def description_poste(self):
+        """Méthode abstraite pour décrire le poste"""
+        pass
+    
+    def se_presenter(self):
+        base = super().se_presenter()
+        return f"{base}, {self.description_poste()}, {self.anciennete} ans d'ancienneté"
+
+class EmployeTempsPlein(Employe):
+    """Employé à temps plein avec salaire fixe"""
+    
+    def __init__(self, nom, prenom, date_naissance, email, numero_employe, 
+                 date_embauche, salaire_mensuel, poste):
+        super().__init__(nom, prenom, date_naissance, email, numero_employe, date_embauche)
+        self.salaire_mensuel = salaire_mensuel
+        self.poste = poste
+        self.conges_pris = 0
+        self.conges_autorises = 25  # 25 jours par an
+    
+    def calculer_salaire(self):
+        return self.salaire_mensuel
+    
+    def description_poste(self):
+        return f"{self.poste} à temps plein"
+    
+    def prendre_conges(self, jours):
+        if self.conges_pris + jours <= self.conges_autorises:
+            self.conges_pris += jours
+            return True, f"Congés accordés. Restant: {self.conges_autorises - self.conges_pris} jours"
+        return False, "Pas assez de jours de congés disponibles"
+
+class EmployeTempsPartiel(Employe):
+    """Employé à temps partiel avec salaire horaire"""
+    
+    def __init__(self, nom, prenom, date_naissance, email, numero_employe, 
+                 date_embauche, salaire_horaire, heures_semaine):
+        super().__init__(nom, prenom, date_naissance, email, numero_employe, date_embauche)
+        self.salaire_horaire = salaire_horaire
+        self.heures_semaine = heures_semaine
+        self.heures_travaillees_mois = 0
+    
+    def calculer_salaire(self):
+        # Calcul basé sur les heures travaillées ce mois
+        return self.heures_travaillees_mois * self.salaire_horaire
+    
+    def description_poste(self):
+        return f"Temps partiel ({self.heures_semaine}h/semaine)"
+    
+    def enregistrer_heures(self, heures):
+        self.heures_travaillees_mois += heures
+        print(f"Heures enregistrées: +{heures}h (Total: {self.heures_travaillees_mois}h)")
+
+class Freelance(Personne):
+    """Freelance - hérite de Personne mais pas d'Employe"""
+    
+    def __init__(self, nom, prenom, date_naissance, email, specialite, taux_horaire):
+        super().__init__(nom, prenom, date_naissance, email)
+        self.specialite = specialite
+        self.taux_horaire = taux_horaire
+        self.projets_actifs = []
+        self.heures_facturees = 0
+    
+    def ajouter_projet(self, nom_projet, heures_estimees):
+        projet = {
+            'nom': nom_projet,
+            'heures_estimees': heures_estimees,
+            'heures_travaillees': 0,
+            'date_debut': datetime.now()
+        }
+        self.projets_actifs.append(projet)
+        return f"Projet '{nom_projet}' ajouté ({heures_estimees}h estimées)"
+    
+    def facturer_heures(self, nom_projet, heures):
+        for projet in self.projets_actifs:
+            if projet['nom'] == nom_projet:
+                projet['heures_travaillees'] += heures
+                self.heures_facturees += heures
+                montant = heures * self.taux_horaire
+                return f"Facturé: {heures}h sur '{nom_projet}' = {montant}€"
+        return "Projet non trouvé"
+    
+    def revenus_totaux(self):
+        return self.heures_facturees * self.taux_horaire
+    
+    def se_presenter(self):
+        base = super().se_presenter()
+        return f"{base}, Freelance {self.specialite}"
+
+class Entreprise:
+    """Gestionnaire d'entreprise avec polymorphisme"""
+    
+    def __init__(self, nom):
+        self.nom = nom
+        self.employes = []
+        self.freelances = []
+    
+    def embaucher_employe(self, employe):
+        if isinstance(employe, Employe):
+            self.employes.append(employe)
+            return f"Employé {employe.nom_complet} embauché"
+        return "Seuls les employés peuvent être embauchés"
+    
+    def engager_freelance(self, freelance):
+        if isinstance(freelance, Freelance):
+            self.freelances.append(freelance)
+            return f"Freelance {freelance.nom_complet} engagé"
+        return "Seuls les freelances peuvent être engagés"
+    
+    def calculer_masse_salariale(self):
+        """Polymorphisme en action !"""
+        total = 0
+        print(f"\\n=== Masse salariale de {self.nom} ===")
+        
+        for employe in self.employes:
+            if employe.actif:
+                salaire = employe.calculer_salaire()  # Polymorphisme !
+                total += salaire
+                print(f"• {employe.nom_complet}: {salaire}€ ({employe.description_poste()})")
+        
+        print(f"\\nTotal employés: {total}€")
+        return total
+    
+    def afficher_equipe(self):
+        """Polymorphisme avec méthode se_presenter"""
+        print(f"\\n=== Équipe de {self.nom} ===")
+        
+        print("EMPLOYÉS:")
+        for employe in self.employes:
+            if employe.actif:
+                print(f"• {employe.se_presenter()}")  # Polymorphisme !
+        
+        print("\\nFREELANCES:")
+        for freelance in self.freelances:
+            print(f"• {freelance.se_presenter()}")  # Polymorphisme !
+
+# Exemple d'utilisation
+if __name__ == "__main__":
+    # Créer une entreprise
+    entreprise = Entreprise("TechCorp")
+    
+    # Créer des employés avec différents types
+    dev_senior = EmployeTempsPlein(
+        "Dupont", "Alice", date(1990, 5, 15), "alice@techcorp.com",
+        "E001", date(2020, 3, 1), 4500, "Développeuse Senior"
+    )
+    
+    assistant = EmployeTempsPartiel(
+        "Martin", "Bob", date(1995, 8, 20), "bob@techcorp.com",
+        "E002", date(2022, 1, 15), 15, 20
+    )
+    
+    designer = Freelance(
+        "Dubois", "Clara", date(1988, 12, 3), "clara@design.com",
+        "UI/UX Design", 50
+    )
+    
+    # Embaucher/engager
+    print(entreprise.embaucher_employe(dev_senior))
+    print(entreprise.embaucher_employe(assistant))
+    print(entreprise.engager_freelance(designer))
+    
+    # Simuler du travail
+    assistant.enregistrer_heures(80)  # 80h ce mois
+    designer.ajouter_projet("Refonte site web", 40)
+    print(designer.facturer_heures("Refonte site web", 25))
+    
+    # Afficher l'équipe (polymorphisme)
+    entreprise.afficher_equipe()
+    
+    # Calculer la masse salariale (polymorphisme)
+    entreprise.calculer_masse_salariale()''',
+                    'exercice': '''## 🎯 Exercice : Système de gestion de véhicules
+
+**Objectif :** Créer un système de gestion de véhicules utilisant l'héritage et le polymorphisme
+
+### Partie 1 : Classes de base
+
+#### 1. Classe abstraite `Vehicule`
+```python
+from abc import ABC, abstractmethod
+
+class Vehicule(ABC):
+    def __init__(self, marque, modele, annee, prix):
+        self.marque = marque
+        self.modele = modele
+        self.annee = annee
+        self.prix = prix
+        self.kilometrage = 0
+    
+    @abstractmethod
+    def demarrer(self):
+        pass
+    
+    @abstractmethod
+    def arreter(self):
+        pass
+    
+    @abstractmethod
+    def calculer_consommation(self, distance):
+        pass
+    
+    def vieillir(self):
+        # Dépréciation de 10% par an
+        age = 2024 - self.annee
+        return self.prix * (0.9 ** age)
+```
+
+#### 2. Classes spécialisées
+
+**Voiture thermique :**
+```python
+class VoitureThermique(Vehicule):
+    def __init__(self, marque, modele, annee, prix, consommation_100km):
+        super().__init__(marque, modele, annee, prix)
+        self.consommation_100km = consommation_100km  # L/100km
+        self.reservoir = 50  # Litres
+        self.moteur_allume = False
+    
+    def faire_le_plein(self, litres):
+        # Ajouter du carburant
+        pass
+    
+    def demarrer(self):
+        # Implémenter le démarrage
         pass
 ```
 
-### Partie 2 : Classe de gestion
-
-#### 4. Classe `Ecole`
+**Voiture électrique :**
 ```python
-class Ecole:
-    def __init__(self, nom_ecole):
-        self.nom = nom_ecole
-        self.etudiants = {}  # {numero_etudiant: Etudiant}
-        self.professeurs = {}  # {id_prof: Professeur}
-        self.classes = {}  # {nom_classe: [etudiants]}
+class VoitureElectrique(Vehicule):
+    def __init__(self, marque, modele, annee, prix, autonomie_km):
+        super().__init__(marque, modele, annee, prix)
+        self.autonomie_km = autonomie_km
+        self.batterie_pourcentage = 100
+        self.en_marche = False
     
-    def inscrire_etudiant(self, etudiant):
-        # Inscrire un nouvel étudiant
+    def recharger(self, heures):
+        # Recharger la batterie
         pass
     
-    def embaucher_professeur(self, professeur):
-        # Embaucher un professeur
+    def demarrer(self):
+        # Implémenter le démarrage électrique
+        pass
+```
+
+**Moto :**
+```python
+class Moto(Vehicule):
+    def __init__(self, marque, modele, annee, prix, cylindree):
+        super().__init__(marque, modele, annee, prix)
+        self.cylindree = cylindree
+        self.consommation_100km = 4.5  # Consommation fixe
+        # Ajouter d'autres attributs spécifiques
+```
+
+### Partie 2 : Gestionnaire de parc
+
+#### 3. Classe `ParcVehicules`
+```python
+class ParcVehicules:
+    def __init__(self, nom):
+        self.nom = nom
+        self.vehicules = []
+    
+    def ajouter_vehicule(self, vehicule):
+        # Ajouter un véhicule au parc
         pass
     
-    def creer_classe(self, nom_classe, professeur_principal):
-        # Créer une nouvelle classe
+    def demarrer_tous(self):
+        # Démarrer tous les véhicules (polymorphisme !)
         pass
     
-    def bulletin_notes(self, numero_etudiant):
-        # Générer le bulletin d'un étudiant
+    def calculer_valeur_totale(self):
+        # Calculer la valeur dépréciée de tous les véhicules
         pass
     
-    def statistiques_classe(self, nom_classe):
-        # Statistiques d'une classe
+    def vehicules_par_type(self):
+        # Grouper les véhicules par type
+        pass
+    
+    def simulation_trajet(self, distance_km):
+        # Simuler un trajet pour tous les véhicules
         pass
 ```
 
 ### Exemple d'utilisation attendue :
 
 ```python
-# Créer l'école
-mon_ecole = Ecole("Lycée Victor Hugo")
+# Créer le parc
+parc = ParcVehicules("Parc Municipal")
 
-# Créer des professeurs
-prof_math = Professeur("Dupont", "Pierre", 45, "p.dupont@ecole.fr", "Mathématiques", 3500)
-prof_fr = Professeur("Martin", "Sophie", 38, "s.martin@ecole.fr", "Français", 3200)
+# Créer différents véhicules
+voiture1 = VoitureThermique("Peugeot", "208", 2020, 18000, 5.2)
+voiture2 = VoitureElectrique("Tesla", "Model 3", 2022, 45000, 500)
+moto1 = Moto("Yamaha", "R1", 2019, 12000, 998)
 
-# Créer des étudiants
-alice = Etudiant("Durand", "Alice", 16, "alice@email.com", "E001", "2A")
-bob = Etudiant("Bernard", "Bob", 17, "bob@email.com", "E002", "2A")
+# Ajouter au parc
+parc.ajouter_vehicule(voiture1)
+parc.ajouter_vehicule(voiture2)
+parc.ajouter_vehicule(moto1)
 
-# Inscrire dans l'école
-mon_ecole.embaucher_professeur(prof_math)
-mon_ecole.inscrire_etudiant(alice)
-mon_ecole.inscrire_etudiant(bob)
+# Polymorphisme en action
+parc.demarrer_tous()  # Chaque véhicule démarre différemment
+parc.simulation_trajet(100)  # Consommation différente pour chaque type
 
-# Ajouter des notes
-alice.ajouter_note("Mathématiques", 15)
-alice.ajouter_note("Français", 18)
-
-# Afficher bulletin
-mon_ecole.bulletin_notes("E001")
+print(f"Valeur totale: {parc.calculer_valeur_totale()}€")
 ```
 
 ### Fonctionnalités bonus :
 
-1. **Validation des données** (email, âge, notes entre 0-20)
-2. **Méthodes spéciales** (`__str__`, `__repr__`, `__eq__`)
-3. **Gestion des absences** avec dates
-4. **Calcul de moyennes par matière**
-5. **Classement des étudiants**
-6. **Sauvegarde en fichier JSON**
+1. **Méthodes spéciales** : `__str__`, `__repr__`, `__eq__` pour comparer
+2. **Propriétés calculées** : `@property` pour autonomie restante, âge, etc.
+3. **Validation** : Vérifier les valeurs (prix positif, année valide)
+4. **Statistiques avancées** : véhicule le plus cher, plus ancien, etc.
+5. **Sérialisation JSON** : Sauvegarder/charger le parc
+6. **Interface utilisateur** : Menu interactif pour gérer le parc
 
-**Conseils :**
-- Utilisez l'héritage pour éviter la duplication
-- Implémentez les propriétés avec `@property`
-- Gérez les erreurs (étudiant inexistant, note invalide)
-- Documentez vos classes avec des docstrings'''
+**Concepts testés :**
+- Héritage simple et multiple
+- Méthodes abstraites (ABC)
+- Polymorphisme
+- `super()` et redéfinition de méthodes
+- Propriétés et encapsulation
+
+**Sortie attendue :**
+```
+=== Démarrage de tous les véhicules ===
+Peugeot 208: Moteur thermique démarré
+Tesla Model 3: Système électrique activé
+Yamaha R1: Moteur moto démarré
+
+=== Simulation trajet 100km ===
+Peugeot 208: 5.2L consommés
+Tesla Model 3: 80% batterie restante
+Yamaha R1: 4.5L consommés
+```'''
+                }
+            )
+            
+            # Chapitre 3: Gestion des Exceptions
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='gestion-exceptions',
+                defaults={
+                    'titre': 'Gestion des Exceptions',
+                    'ordre': 2,
+                    'contenu': '''# Gestion des Exceptions en Python
+
+## 🚨 Qu'est-ce qu'une exception ?
+
+Une **exception** est une erreur qui se produit lors de l'exécution d'un programme. Au lieu de faire planter le programme, Python nous permet de "capturer" ces erreurs et de les gérer élégamment.
+
+## 🛡️ Structure try/except de base
+
+```python
+try:
+    # Code qui peut générer une erreur
+    nombre = int(input("Entrez un nombre: "))
+    resultat = 10 / nombre
+    print(f"Résultat: {resultat}")
+except ZeroDivisionError:
+    print("Erreur: Division par zéro impossible !")
+except ValueError:
+    print("Erreur: Vous devez entrer un nombre valide !")
+
+print("Le programme continue normalement...")
+```
+
+## 🎯 Capturer plusieurs exceptions
+
+### Méthode 1 : Plusieurs blocs except
+```python
+def diviser_nombres():
+    try:
+        a = float(input("Premier nombre: "))
+        b = float(input("Deuxième nombre: "))
+        resultat = a / b
+        print(f"{a} ÷ {b} = {resultat}")
+    except ValueError:
+        print("❌ Erreur: Entrée invalide - utilisez des nombres")
+    except ZeroDivisionError:
+        print("❌ Erreur: Division par zéro impossible")
+    except KeyboardInterrupt:
+        print("\\n❌ Opération annulée par l'utilisateur")
+
+diviser_nombres()
+```
+
+### Méthode 2 : Tuple d'exceptions
+```python
+def operation_securisee():
+    try:
+        data = eval(input("Entrez une expression: "))  # ⚠️ Dangereux en réalité !
+        print(f"Résultat: {data}")
+    except (ValueError, SyntaxError, NameError) as e:
+        print(f"❌ Erreur de syntaxe ou de valeur: {e}")
+    except ZeroDivisionError:
+        print("❌ Division par zéro détectée")
+    except Exception as e:
+        print(f"❌ Erreur inattendue: {type(e).__name__}: {e}")
+```
+
+## 🔧 Bloc finally et else
+
+```python
+def lire_fichier(nom_fichier):
+    fichier = None
+    try:
+        print(f"📂 Tentative d'ouverture de {nom_fichier}")
+        fichier = open(nom_fichier, 'r', encoding='utf-8')
+        contenu = fichier.read()
+        print(f"✅ Fichier lu avec succès ({len(contenu)} caractères)")
+        return contenu
+    
+    except FileNotFoundError:
+        print(f"❌ Fichier '{nom_fichier}' introuvable")
+        return None
+    
+    except PermissionError:
+        print(f"❌ Pas de permission pour lire '{nom_fichier}'")
+        return None
+    
+    except Exception as e:
+        print(f"❌ Erreur inattendue: {e}")
+        return None
+    
+    else:
+        # Exécuté seulement si aucune exception n'a été levée
+        print("🎉 Lecture réussie sans erreur")
+    
+    finally:
+        # Toujours exécuté, même en cas d'exception
+        if fichier and not fichier.closed:
+            fichier.close()
+            print("🔒 Fichier fermé proprement")
+
+# Test
+contenu = lire_fichier("test.txt")
+```
+
+## 🎪 Créer ses propres exceptions
+
+```python
+# Exception personnalisée simple
+class AgeInvalideError(Exception):
+    """Exception levée quand un âge est invalide"""
+    pass
+
+class EmailInvalideError(Exception):
+    """Exception levée quand un email est invalide"""
+    def __init__(self, email, message="Email invalide"):
+        self.email = email
+        self.message = message
+        super().__init__(self.message)
+
+class CompteInexistantError(Exception):
+    """Exception pour un compte bancaire inexistant"""
+    def __init__(self, numero_compte):
+        self.numero_compte = numero_compte
+        super().__init__(f"Le compte {numero_compte} n'existe pas")
+
+# Utilisation des exceptions personnalisées
+class Personne:
+    def __init__(self, nom, age, email):
+        self.nom = nom
+        self.set_age(age)
+        self.set_email(email)
+    
+    def set_age(self, age):
+        if not isinstance(age, int) or age < 0 or age > 150:
+            raise AgeInvalideError(f"Âge invalide: {age}. Doit être entre 0 et 150")
+        self.age = age
+    
+    def set_email(self, email):
+        if "@" not in email or "." not in email:
+            raise EmailInvalideError(email, f"L'email '{email}' n'est pas valide")
+        self.email = email
+
+# Test avec gestion d'erreurs
+def creer_personne_securise():
+    try:
+        nom = input("Nom: ")
+        age = int(input("Âge: "))
+        email = input("Email: ")
+        
+        personne = Personne(nom, age, email)
+        print(f"✅ Personne créée: {personne.nom} ({personne.age} ans)")
+        return personne
+        
+    except ValueError:
+        print("❌ L'âge doit être un nombre entier")
+    except AgeInvalideError as e:
+        print(f"❌ {e}")
+    except EmailInvalideError as e:
+        print(f"❌ {e.message}: {e.email}")
+    
+    return None
+```
+
+## 💰 Exemple concret : Système bancaire
+
+```python
+class SoldeInsuffisantError(Exception):
+    """Exception pour solde insuffisant"""
+    def __init__(self, solde_actuel, montant_demande):
+        self.solde_actuel = solde_actuel
+        self.montant_demande = montant_demande
+        super().__init__(
+            f"Solde insuffisant: {solde_actuel}€ disponibles, "
+            f"{montant_demande}€ demandés"
+        )
+
+class CompteBancaire:
+    def __init__(self, numero, titulaire, solde_initial=0):
+        self.numero = numero
+        self.titulaire = titulaire
+        self.solde = solde_initial
+        self.bloque = False
+    
+    def retirer(self, montant):
+        """Retirer de l'argent avec validation complète"""
+        if self.bloque:
+            raise Exception("Compte bloqué")
+        if montant <= 0:
+            raise ValueError("Montant invalide")
+        if montant > self.solde:
+            raise SoldeInsuffisantError(self.solde, montant)
+        
+        self.solde -= montant
+        print(f"✅ Retrait réussi: {montant}€. Nouveau solde: {self.solde}€")
+
+# Utilisation
+compte = CompteBancaire("12345", "Alice", 1000)
+
+try:
+    compte.retirer(500)   # ✅ OK
+    compte.retirer(600)   # ❌ Solde insuffisant
+except SoldeInsuffisantError as e:
+    print(f"❌ {e}")
+```
+
+## ⚡ Bonnes pratiques
+
+### 1. Spécifiez les exceptions
+```python
+# ❌ Trop général
+try:
+    operation_risquee()
+except:  # Capture TOUT, même Ctrl+C !
+    pass
+
+# ✅ Spécifique
+try:
+    operation_risquee()
+except (ValueError, TypeError) as e:
+    handle_error(e)
+```
+
+### 2. N'ignorez pas les erreurs
+```python
+# ❌ Mauvais - erreur silencieuse
+try:
+    risky_operation()
+except Exception:
+    pass  # Dangereux !
+
+# ✅ Bon - au minimum logger
+try:
+    risky_operation()
+except Exception as e:
+    print(f"Erreur: {e}")
+    # Puis décider quoi faire
+```
+
+### 3. Utilisez finally pour le nettoyage
+```python
+# ✅ Ressources toujours libérées
+resource = None
+try:
+    resource = acquire_resource()
+    use_resource(resource)
+except ResourceError:
+    handle_error()
+finally:
+    if resource:
+        release_resource(resource)
+```
+
+La gestion d'exceptions permet de créer des programmes robustes et fiables ! 🛡️''',
+                    'code_exemple': '''# Exemple complet : Calculatrice robuste avec gestion d'erreurs
+
+class CalculatriceError(Exception):
+    """Exception de base pour la calculatrice"""
+    pass
+
+class DivisionParZeroError(CalculatriceError):
+    """Exception pour division par zéro"""
+    def __init__(self):
+        super().__init__("Division par zéro impossible")
+
+class OperationInconnueError(CalculatriceError):
+    """Exception pour opération non supportée"""
+    def __init__(self, operation):
+        self.operation = operation
+        super().__init__(f"Opération '{operation}' non reconnue")
+
+class NombreInvalideError(CalculatriceError):
+    """Exception pour nombre invalide"""
+    def __init__(self, valeur):
+        self.valeur = valeur
+        super().__init__(f"'{valeur}' n'est pas un nombre valide")
+
+class CalculatriceAvancee:
+    """Calculatrice avec gestion robuste des erreurs"""
+    
+    def __init__(self):
+        self.historique = []
+        self.derniere_reponse = 0
+    
+    def _valider_nombre(self, valeur):
+        """Valide et convertit une valeur en nombre"""
+        try:
+            if isinstance(valeur, str):
+                valeur = valeur.strip()
+                if valeur.lower() == 'ans':
+                    return self.derniere_reponse
+            
+            return float(valeur)
+        except (ValueError, TypeError):
+            raise NombreInvalideError(valeur)
+    
+    def _enregistrer_operation(self, operation, resultat):
+        """Enregistre l'opération dans l'historique"""
+        self.historique.append({
+            'operation': operation,
+            'resultat': resultat,
+            'timestamp': __import__('datetime').datetime.now()
+        })
+        self.derniere_reponse = resultat
+    
+    def additionner(self, a, b):
+        """Addition avec gestion d'erreurs"""
+        try:
+            a = self._valider_nombre(a)
+            b = self._valider_nombre(b)
+            resultat = a + b
+            
+            operation = f"{a} + {b}"
+            self._enregistrer_operation(operation, resultat)
+            
+            print(f"✅ {operation} = {resultat}")
+            return resultat
+            
+        except NombreInvalideError as e:
+            print(f"❌ Erreur d'addition: {e}")
+            raise
+        except Exception as e:
+            print(f"❌ Erreur inattendue lors de l'addition: {e}")
+            raise CalculatriceError(f"Addition échouée: {e}")
+    
+    def diviser(self, a, b):
+        """Division avec gestion de la division par zéro"""
+        try:
+            a = self._valider_nombre(a)
+            b = self._valider_nombre(b)
+            
+            if b == 0:
+                raise DivisionParZeroError()
+            
+            resultat = a / b
+            operation = f"{a} ÷ {b}"
+            self._enregistrer_operation(operation, resultat)
+            
+            print(f"✅ {operation} = {resultat}")
+            return resultat
+            
+        except DivisionParZeroError:
+            print("❌ Impossible de diviser par zéro !")
+            raise
+        except NombreInvalideError as e:
+            print(f"❌ Erreur de division: {e}")
+            raise
+        except Exception as e:
+            print(f"❌ Erreur inattendue lors de la division: {e}")
+            raise CalculatriceError(f"Division échouée: {e}")
+    
+    def puissance(self, base, exposant):
+        """Calcul de puissance avec gestion des cas limites"""
+        try:
+            base = self._valider_nombre(base)
+            exposant = self._valider_nombre(exposant)
+            
+            # Cas spéciaux
+            if base == 0 and exposant < 0:
+                raise CalculatriceError("0 élevé à une puissance négative")
+            
+            if abs(base) > 1000 and abs(exposant) > 100:
+                raise CalculatriceError("Calcul trop volumineux (risque de débordement)")
+            
+            resultat = base ** exposant
+            
+            # Vérifier si le résultat est trop grand
+            if abs(resultat) > 10**100:
+                raise CalculatriceError("Résultat trop grand pour être affiché")
+            
+            operation = f"{base} ^ {exposant}"
+            self._enregistrer_operation(operation, resultat)
+            
+            print(f"✅ {operation} = {resultat}")
+            return resultat
+            
+        except NombreInvalideError as e:
+            print(f"❌ Erreur de puissance: {e}")
+            raise
+        except OverflowError:
+            error_msg = "Résultat trop grand (débordement numérique)"
+            print(f"❌ {error_msg}")
+            raise CalculatriceError(error_msg)
+        except CalculatriceError:
+            raise  # Re-lancer notre exception personnalisée
+        except Exception as e:
+            print(f"❌ Erreur inattendue lors du calcul de puissance: {e}")
+            raise CalculatriceError(f"Calcul de puissance échoué: {e}")
+    
+    def racine(self, nombre):
+        """Racine carrée avec gestion des nombres négatifs"""
+        try:
+            nombre = self._valider_nombre(nombre)
+            
+            if nombre < 0:
+                raise CalculatriceError("Racine carrée d'un nombre négatif impossible")
+            
+            resultat = nombre ** 0.5
+            operation = f"√{nombre}"
+            self._enregistrer_operation(operation, resultat)
+            
+            print(f"✅ {operation} = {resultat}")
+            return resultat
+            
+        except NombreInvalideError as e:
+            print(f"❌ Erreur de racine carrée: {e}")
+            raise
+        except CalculatriceError:
+            raise
+        except Exception as e:
+            print(f"❌ Erreur inattendue lors du calcul de racine: {e}")
+            raise CalculatriceError(f"Calcul de racine échoué: {e}")
+    
+    def calculer(self, expression):
+        """Calcule une expression avec gestion d'erreurs complète"""
+        try:
+            # Parser simple pour "a op b"
+            expression = expression.replace(' ', '')
+            
+            operators = {'+': self.additionner, '-': lambda a,b: a-b, 
+                        '*': lambda a,b: a*b, '/': self.diviser}
+            
+            for op, func in operators.items():
+                if op in expression:
+                    parts = expression.split(op, 1)
+                    if len(parts) == 2:
+                        if func == self.additionner or func == self.diviser:
+                            return func(parts[0], parts[1])
+                        else:
+                            a = self._valider_nombre(parts[0])
+                            b = self._valider_nombre(parts[1])
+                            if op == '-':
+                                resultat = a - b
+                                operation = f"{a} - {b}"
+                            else:  # multiplication
+                                resultat = a * b
+                                operation = f"{a} × {b}"
+                            
+                            self._enregistrer_operation(operation, resultat)
+                            print(f"✅ {operation} = {resultat}")
+                            return resultat
+            
+            raise OperationInconnueError(expression)
+            
+        except (NombreInvalideError, OperationInconnueError, DivisionParZeroError):
+            raise
+        except Exception as e:
+            print(f"❌ Erreur lors du calcul: {e}")
+            raise CalculatriceError(f"Calcul échoué: {e}")
+    
+    def afficher_historique(self):
+        """Affiche l'historique des calculs"""
+        try:
+            if not self.historique:
+                print("📋 Historique vide")
+                return
+            
+            print("\\n📋 Historique des calculs:")
+            for i, calc in enumerate(self.historique[-10:], 1):  # 10 derniers
+                print(f"{i}. {calc['operation']} = {calc['resultat']}")
+            
+            if len(self.historique) > 10:
+                print(f"... et {len(self.historique) - 10} calculs plus anciens")
+                
+        except Exception as e:
+            print(f"❌ Erreur lors de l'affichage de l'historique: {e}")
+    
+    def effacer_historique(self):
+        """Efface l'historique avec confirmation"""
+        try:
+            if not self.historique:
+                print("📋 Historique déjà vide")
+                return
+            
+            nb_calculs = len(self.historique)
+            self.historique.clear()
+            self.derniere_reponse = 0
+            print(f"✅ Historique effacé ({nb_calculs} calculs supprimés)")
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de l'effacement: {e}")
+
+def demo_calculatrice():
+    """Démonstration avec différents types d'erreurs"""
+    calc = CalculatriceAvancee()
+    
+    # Tests de différents scénarios
+    tests = [
+        ("5 + 3", "Addition normale"),
+        ("10 / 0", "Division par zéro"),
+        ("abc + 5", "Nombre invalide"),
+        ("2 ^ 1000", "Puissance trop grande"),
+        ("√-4", "Racine négative"),
+        ("10 / 2", "Division normale"),
+        ("ans + 5", "Utilisation du résultat précédent"),
+    ]
+    
+    for expression, description in tests:
+        print(f"\\n--- Test: {description} ---")
+        print(f"Expression: {expression}")
+        
+        try:
+            if expression.startswith('√'):
+                # Extraction manuelle pour la racine
+                nombre = expression[1:]
+                calc.racine(nombre)
+            else:
+                calc.calculer(expression)
+                
+        except (DivisionParZeroError, NombreInvalideError, 
+                OperationInconnueError, CalculatriceError) as e:
+            print(f"❌ Erreur gérée: {e}")
+        except Exception as e:
+            print(f"🚨 Erreur inattendue: {type(e).__name__}: {e}")
+    
+    # Afficher l'historique final
+    calc.afficher_historique()
+
+if __name__ == "__main__":
+    demo_calculatrice()''',
+                    'exercice': '''## 🎯 Exercice : Système de validation de formulaire
+
+**Objectif :** Créer un système de validation robuste avec exceptions personnalisées
+
+### Partie 1 : Exceptions de validation
+
+Créez une hiérarchie d'exceptions pour différents types d'erreurs de validation :
+
+```python
+class ValidationError(Exception):
+    """Exception de base pour toutes les erreurs de validation"""
+    def __init__(self, field_name, message):
+        self.field_name = field_name
+        self.message = message
+        super().__init__(f"Erreur dans '{field_name}': {message}")
+
+class RequiredFieldError(ValidationError):
+    """Exception pour champ obligatoire manquant"""
+    def __init__(self, field_name):
+        super().__init__(field_name, "Ce champ est obligatoire")
+
+class InvalidEmailError(ValidationError):
+    """Exception pour email invalide"""
+    pass
+
+class InvalidPhoneError(ValidationError):
+    """Exception pour numéro de téléphone invalide"""
+    pass
+
+class PasswordTooWeakError(ValidationError):
+    """Exception pour mot de passe trop faible"""
+    def __init__(self, field_name, requirements):
+        self.requirements = requirements
+        message = f"Le mot de passe doit contenir: {', '.join(requirements)}"
+        super().__init__(field_name, message)
+
+class AgeRangeError(ValidationError):
+    """Exception pour âge hors limites"""
+    pass
+
+class MultipleValidationError(Exception):
+    """Exception pour plusieurs erreurs de validation"""
+    def __init__(self, errors):
+        self.errors = errors
+        super().__init__(f"{len(errors)} erreur(s) de validation")
+```
+
+### Partie 2 : Système de validation
+
+```python
+import re
+from typing import Dict, List, Any, Optional
+
+class FormValidator:
+    """Validateur de formulaire avec gestion d'erreurs complète"""
+    
+    def __init__(self):
+        self.errors = []
+        self.warnings = []
+    
+    def validate_required(self, value: Any, field_name: str):
+        """Valide qu'un champ obligatoire n'est pas vide"""
+        # À implémenter
+        pass
+    
+    def validate_email(self, email: str, field_name: str):
+        """Valide le format d'un email"""
+        # À implémenter avec regex
+        pass
+    
+    def validate_phone(self, phone: str, field_name: str):
+        """Valide un numéro de téléphone français"""
+        # À implémenter (format 0X.XX.XX.XX.XX ou +33.X.XX.XX.XX.XX)
+        pass
+    
+    def validate_password(self, password: str, field_name: str):
+        """Valide la force d'un mot de passe"""
+        # Critères : min 8 caractères, majuscule, minuscule, chiffre, caractère spécial
+        # À implémenter
+        pass
+    
+    def validate_age(self, age: int, field_name: str, min_age: int = 0, max_age: int = 120):
+        """Valide un âge dans une fourchette"""
+        # À implémenter
+        pass
+    
+    def validate_date(self, date_str: str, field_name: str, date_format: str = "%d/%m/%Y"):
+        """Valide et parse une date"""
+        # À implémenter avec datetime
+        pass
+    
+    def validate_url(self, url: str, field_name: str):
+        """Valide qu'une URL est bien formée"""
+        # À implémenter
+        pass
+    
+    def add_error(self, error: ValidationError):
+        """Ajoute une erreur à la liste"""
+        self.errors.append(error)
+    
+    def add_warning(self, field_name: str, message: str):
+        """Ajoute un avertissement"""
+        self.warnings.append({'field': field_name, 'message': message})
+    
+    def validate_form(self, form_data: Dict[str, Any], rules: Dict[str, Dict]) -> bool:
+        """Valide un formulaire complet selon des règles"""
+        # Exemple de rules:
+        # {
+        #     'email': {'required': True, 'type': 'email'},
+        #     'age': {'required': True, 'type': 'age', 'min': 18, 'max': 65},
+        #     'password': {'required': True, 'type': 'password'},
+        #     'phone': {'required': False, 'type': 'phone'}
+        # }
+        # À implémenter
+        pass
+    
+    def get_errors(self) -> List[ValidationError]:
+        """Retourne la liste des erreurs"""
+        return self.errors
+    
+    def get_warnings(self) -> List[Dict]:
+        """Retourne la liste des avertissements"""
+        return self.warnings
+    
+    def has_errors(self) -> bool:
+        """Vérifie s'il y a des erreurs"""
+        return len(self.errors) > 0
+    
+    def clear(self):
+        """Efface toutes les erreurs et avertissements"""
+        self.errors.clear()
+        self.warnings.clear()
+```
+
+### Partie 3 : Gestionnaire de formulaire d'inscription
+
+```python
+class RegistrationForm:
+    """Formulaire d'inscription avec validation complète"""
+    
+    def __init__(self):
+        self.validator = FormValidator()
+    
+    def validate_registration(self, form_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Valide un formulaire d'inscription complet"""
+        # Règles de validation
+        rules = {
+            'nom': {'required': True, 'type': 'string', 'min_length': 2},
+            'prenom': {'required': True, 'type': 'string', 'min_length': 2},
+            'email': {'required': True, 'type': 'email'},
+            'password': {'required': True, 'type': 'password'},
+            'confirm_password': {'required': True, 'type': 'string'},
+            'age': {'required': True, 'type': 'age', 'min': 16, 'max': 99},
+            'phone': {'required': False, 'type': 'phone'},
+            'website': {'required': False, 'type': 'url'},
+            'birth_date': {'required': True, 'type': 'date'},
+            'terms_accepted': {'required': True, 'type': 'boolean'}
+        }
+        
+        try:
+            self.validator.clear()
+            
+            # Validation avec les règles
+            is_valid = self.validator.validate_form(form_data, rules)
+            
+            # Validation personnalisée pour la confirmation du mot de passe
+            if 'password' in form_data and 'confirm_password' in form_data:
+                if form_data['password'] != form_data['confirm_password']:
+                    self.validator.add_error(
+                        ValidationError('confirm_password', 'Les mots de passe ne correspondent pas')
+                    )
+            
+            # Validation des conditions d'utilisation
+            if not form_data.get('terms_accepted', False):
+                self.validator.add_error(
+                    RequiredFieldError('terms_accepted')
+                )
+            
+            return {
+                'valid': not self.validator.has_errors(),
+                'errors': [{'field': e.field_name, 'message': e.message} for e in self.validator.get_errors()],
+                'warnings': self.validator.get_warnings()
+            }
+            
+        except Exception as e:
+            # Gestion des erreurs inattendues
+            return {
+                'valid': False,
+                'errors': [{'field': 'system', 'message': f'Erreur système: {e}'}],
+                'warnings': []
+            }
+```
+
+### Exemple d'utilisation :
+
+```python
+def test_validation():
+    """Test du système de validation avec différents cas"""
+    form = RegistrationForm()
+    
+    # Test cases avec différents types d'erreurs
+    test_cases = [
+        {
+            'name': 'Formulaire valide',
+            'data': {
+                'nom': 'Dupont',
+                'prenom': 'Alice',
+                'email': 'alice.dupont@example.com',
+                'password': 'MotDePasse123!',
+                'confirm_password': 'MotDePasse123!',
+                'age': 25,
+                'phone': '01.23.45.67.89',
+                'birth_date': '15/05/1998',
+                'terms_accepted': True
+            }
+        },
+        {
+            'name': 'Erreurs multiples',
+            'data': {
+                'nom': '',  # Manquant
+                'email': 'email-invalide',  # Format invalide
+                'password': '123',  # Trop faible
+                'confirm_password': '456',  # Ne correspond pas
+                'age': 15,  # Trop jeune
+                'terms_accepted': False  # Non accepté
+            }
+        }
+    ]
+    
+    for test in test_cases:
+        print(f"\\n--- Test: {test['name']} ---")
+        result = form.validate_registration(test['data'])
+        
+        if result['valid']:
+            print("✅ Formulaire valide !")
+        else:
+            print("❌ Erreurs de validation:")
+            for error in result['errors']:
+                print(f"  • {error['field']}: {error['message']}")
+        
+        if result['warnings']:
+            print("⚠️ Avertissements:")
+            for warning in result['warnings']:
+                print(f"  • {warning['field']}: {warning['message']}")
+```
+
+### Fonctionnalités bonus :
+
+1. **Validation asynchrone** : Vérifier si l'email existe déjà en base
+2. **Sanitisation** : Nettoyer les données avant validation
+3. **Localisation** : Messages d'erreur en plusieurs langues
+4. **Validation conditionnelle** : Règles qui dépendent d'autres champs
+5. **Export des erreurs** : JSON, XML pour APIs
+6. **Validation en temps réel** : Pour interface utilisateur
+
+### Tests attendus :
+
+```python
+def test_edge_cases():
+    """Tests des cas limites"""
+    validator = FormValidator()
+    
+    # Test avec None
+    # Test avec chaînes vides
+    # Test avec caractères spéciaux
+    # Test avec très longues chaînes
+    # Test avec données malformées
+    
+    pass
+```
+
+**Critères de réussite :**
+- Toutes les exceptions personnalisées implémentées
+- Validation complète de chaque type de donnée
+- Gestion des erreurs multiples
+- Messages d'erreur clairs et utiles
+- Tests couvrant tous les cas d'erreur
+- Performance acceptable (< 100ms pour un formulaire)
+
+**Sortie attendue :**
+```
+--- Test: Formulaire valide ---
+✅ Formulaire valide !
+
+--- Test: Erreurs multiples ---
+❌ Erreurs de validation:
+  • nom: Ce champ est obligatoire
+  • email: Format d'email invalide
+  • password: Le mot de passe doit contenir: majuscule, minuscule, chiffre, caractère spécial
+  • confirm_password: Les mots de passe ne correspondent pas
+  • age: L'âge doit être entre 16 et 99 ans
+  • terms_accepted: Ce champ est obligatoire
+```'''
                 }
             )
 
