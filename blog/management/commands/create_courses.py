@@ -5830,6 +5830,1036 @@ gestionnaire.creer_sauvegarde_quotidienne()
 Ce système doit être complet, robuste et facile à utiliser ! 🎓'''
                 }
             )
+            
+            # Chapitre 6: Introduction aux bases de données - Partie 1
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='intro-bases-donnees-partie1',
+                defaults={
+                    'titre': 'Introduction aux bases de données - Partie 1',
+                    'ordre': 6,
+                    'contenu': '''# Introduction aux bases de données en Python - Partie 1
+
+## 🗄️ Qu'est-ce qu'une base de données ?
+
+Une **base de données** est un système organisé pour stocker, gérer et récupérer des informations de manière efficace et structurée.
+
+### Types principaux de bases de données
+
+**1. Bases de données relationnelles**
+- MySQL, PostgreSQL, SQLite
+- Données organisées en tables avec relations
+- Langage SQL pour les requêtes
+
+**2. Bases de données NoSQL**
+- MongoDB (documents), Redis (clé-valeur)
+- Flexibles, adaptées au Big Data
+- Pas de schéma fixe
+
+**3. Bases de données en mémoire**
+- Redis, Memcached
+- Très rapides, volatiles
+
+## 📊 SQLite - Base de données intégrée
+
+SQLite est parfait pour débuter : léger, sans configuration, intégré à Python !
+
+### Premier exemple
+```python
+import sqlite3
+
+# Connexion (fichier créé automatiquement)
+connexion = sqlite3.connect('ma_base.db')
+curseur = connexion.cursor()
+
+# Créer une table
+curseur.execute("""
+    CREATE TABLE IF NOT EXISTS utilisateurs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nom TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        age INTEGER
+    )
+""")
+
+# Insérer des données
+curseur.execute(
+    "INSERT INTO utilisateurs (nom, email, age) VALUES (?, ?, ?)",
+    ("Alice Dupont", "alice@email.com", 25)
+)
+
+# Sauvegarder et fermer
+connexion.commit()
+connexion.close()
+
+print("✅ Base de données créée !")
+```
+
+### Opérations de base (CRUD)
+```python
+import sqlite3
+
+def creer_table():
+    """Crée la table des utilisateurs"""
+    with sqlite3.connect('users.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nom TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                age INTEGER CHECK(age > 0)
+            )
+        """)
+        conn.commit()
+
+def ajouter_utilisateur(nom, email, age):
+    """Ajoute un nouvel utilisateur (CREATE)"""
+    try:
+        with sqlite3.connect('users.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO users (nom, email, age) VALUES (?, ?, ?)",
+                (nom, email, age)
+            )
+            conn.commit()
+            print(f"✅ Utilisateur {nom} ajouté !")
+            return cursor.lastrowid
+    except sqlite3.IntegrityError:
+        print("❌ Email déjà utilisé")
+        return None
+
+def lire_utilisateurs():
+    """Lit tous les utilisateurs (READ)"""
+    with sqlite3.connect('users.db') as conn:
+        conn.row_factory = sqlite3.Row  # Pour des colonnes nommées
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users")
+        
+        users = []
+        for row in cursor.fetchall():
+            users.append({
+                'id': row['id'],
+                'nom': row['nom'],
+                'email': row['email'],
+                'age': row['age']
+            })
+        return users
+
+def modifier_utilisateur(user_id, nouveau_nom=None, nouvel_age=None):
+    """Modifie un utilisateur (UPDATE)"""
+    with sqlite3.connect('users.db') as conn:
+        cursor = conn.cursor()
+        
+        if nouveau_nom:
+            cursor.execute(
+                "UPDATE users SET nom = ? WHERE id = ?",
+                (nouveau_nom, user_id)
+            )
+        
+        if nouvel_age:
+            cursor.execute(
+                "UPDATE users SET age = ? WHERE id = ?",
+                (nouvel_age, user_id)
+            )
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            print(f"✅ Utilisateur {user_id} modifié")
+            return True
+        else:
+            print("❌ Utilisateur non trouvé")
+            return False
+
+def supprimer_utilisateur(user_id):
+    """Supprime un utilisateur (DELETE)"""
+    with sqlite3.connect('users.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            print(f"✅ Utilisateur {user_id} supprimé")
+            return True
+        else:
+            print("❌ Utilisateur non trouvé")
+            return False
+```
+
+### Démonstration pratique
+```python
+def demo_sqlite():
+    """Démonstration complète de SQLite"""
+    
+    # Créer la table
+    creer_table()
+    
+    # Ajouter des utilisateurs
+    print("=== AJOUT D'UTILISATEURS ===")
+    id1 = ajouter_utilisateur("Alice Martin", "alice@test.com", 28)
+    id2 = ajouter_utilisateur("Bob Durand", "bob@test.com", 35)
+    id3 = ajouter_utilisateur("Charlie Roy", "charlie@test.com", 42)
+    
+    # Lire tous les utilisateurs
+    print("\\n=== LISTE DES UTILISATEURS ===")
+    utilisateurs = lire_utilisateurs()
+    for user in utilisateurs:
+        print(f"- {user['nom']} ({user['age']} ans) - {user['email']}")
+    
+    # Modifier un utilisateur
+    print("\\n=== MODIFICATION ===")
+    if id1:
+        modifier_utilisateur(id1, nouveau_nom="Alice Martin-Dupont")
+    
+    # Vérifier la modification
+    utilisateurs = lire_utilisateurs()
+    for user in utilisateurs:
+        if user['id'] == id1:
+            print(f"Nom modifié : {user['nom']}")
+    
+    # Supprimer un utilisateur
+    print("\\n=== SUPPRESSION ===")
+    if id3:
+        supprimer_utilisateur(id3)
+    
+    # Afficher le résultat final
+    print("\\n=== RÉSULTAT FINAL ===")
+    utilisateurs = lire_utilisateurs()
+    for user in utilisateurs:
+        print(f"- {user['nom']} ({user['age']} ans)")
+    
+    print(f"\\nNombre total d'utilisateurs : {len(utilisateurs)}")
+
+if __name__ == "__main__":
+    demo_sqlite()
+```
+
+## 🛠️ Bonnes pratiques avec SQLite
+
+### 1. Utilisation du context manager
+```python
+# Recommandé : fermeture automatique
+with sqlite3.connect('database.db') as conn:
+    cursor = conn.cursor()
+    # Vos opérations ici
+    # Commit automatique à la fin
+```
+
+### 2. Paramètres liés (éviter l'injection SQL)
+```python
+# ❌ Dangereux
+query = f"SELECT * FROM users WHERE name = '{name}'"
+
+# ✅ Sécurisé
+cursor.execute("SELECT * FROM users WHERE name = ?", (name,))
+```
+
+### 3. Gestion des erreurs
+```python
+try:
+    cursor.execute("INSERT INTO users ...")
+    conn.commit()
+except sqlite3.IntegrityError as e:
+    print(f"Erreur de contrainte : {e}")
+except sqlite3.Error as e:
+    print(f"Erreur SQLite : {e}")
+```
+
+### 4. Row factory pour des résultats lisibles
+```python
+conn.row_factory = sqlite3.Row
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM users")
+
+for row in cursor.fetchall():
+    print(f"Nom: {row['nom']}, Email: {row['email']}")
+```
+
+La **Partie 2** couvrira les relations entre tables et les requêtes avancées ! 🚀''',
+                    'code_exemple': '''# Exemple complet : Carnet d'adresses avec SQLite
+
+import sqlite3
+import json
+from datetime import datetime, date
+from dataclasses import dataclass, asdict
+from typing import List, Optional, Dict
+
+@dataclass
+class Contact:
+    nom: str
+    prenom: str
+    email: str
+    telephone: str = None
+    adresse: str = None
+    ville: str = None
+    date_ajout: date = None
+    id: Optional[int] = None
+    
+    def __post_init__(self):
+        if self.date_ajout is None:
+            self.date_ajout = date.today()
+
+class CarnetAdresses:
+    """Gestionnaire de carnet d'adresses avec SQLite"""
+    
+    def __init__(self, db_name="contacts.db"):
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        """Initialise la base de données"""
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            
+            # Table principale des contacts
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS contacts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nom TEXT NOT NULL,
+                    prenom TEXT NOT NULL,
+                    email TEXT UNIQUE,
+                    telephone TEXT,
+                    adresse TEXT,
+                    ville TEXT,
+                    date_ajout DATE NOT NULL,
+                    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Index pour optimiser les recherches
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_nom ON contacts(nom)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_email ON contacts(email)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_ville ON contacts(ville)")
+            
+            conn.commit()
+            print("✅ Base de données initialisée")
+    
+    def ajouter_contact(self, contact: Contact) -> Optional[int]:
+        """Ajoute un nouveau contact"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO contacts 
+                    (nom, prenom, email, telephone, adresse, ville, date_ajout)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    contact.nom, contact.prenom, contact.email, 
+                    contact.telephone, contact.adresse, contact.ville,
+                    contact.date_ajout
+                ))
+                
+                contact_id = cursor.lastrowid
+                conn.commit()
+                
+                print(f"✅ Contact {contact.prenom} {contact.nom} ajouté (ID: {contact_id})")
+                return contact_id
+                
+        except sqlite3.IntegrityError:
+            print(f"❌ Email {contact.email} déjà utilisé")
+            return None
+        except sqlite3.Error as e:
+            print(f"❌ Erreur lors de l'ajout: {e}")
+            return None
+    
+    def obtenir_contact(self, contact_id: int) -> Optional[Contact]:
+        """Récupère un contact par son ID"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+            row = cursor.fetchone()
+            
+            if row:
+                return Contact(
+                    id=row['id'],
+                    nom=row['nom'],
+                    prenom=row['prenom'],
+                    email=row['email'],
+                    telephone=row['telephone'],
+                    adresse=row['adresse'],
+                    ville=row['ville'],
+                    date_ajout=datetime.fromisoformat(row['date_ajout']).date()
+                )
+        return None
+    
+    def lister_contacts(self, limite: int = None, ordre: str = 'nom') -> List[Contact]:
+        """Liste tous les contacts"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            query = f"SELECT * FROM contacts ORDER BY {ordre}, prenom"
+            if limite:
+                query += f" LIMIT {limite}"
+            
+            cursor.execute(query)
+            
+            contacts = []
+            for row in cursor.fetchall():
+                contacts.append(Contact(
+                    id=row['id'],
+                    nom=row['nom'],
+                    prenom=row['prenom'],
+                    email=row['email'],
+                    telephone=row['telephone'],
+                    adresse=row['adresse'],
+                    ville=row['ville'],
+                    date_ajout=datetime.fromisoformat(row['date_ajout']).date()
+                ))
+            
+            return contacts
+    
+    def rechercher_contacts(self, terme: str) -> List[Contact]:
+        """Recherche des contacts par nom, prénom, email ou ville"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            pattern = f"%{terme}%"
+            cursor.execute("""
+                SELECT * FROM contacts 
+                WHERE nom LIKE ? OR prenom LIKE ? OR email LIKE ? OR ville LIKE ?
+                ORDER BY nom, prenom
+            """, (pattern, pattern, pattern, pattern))
+            
+            contacts = []
+            for row in cursor.fetchall():
+                contacts.append(Contact(
+                    id=row['id'],
+                    nom=row['nom'],
+                    prenom=row['prenom'],
+                    email=row['email'],
+                    telephone=row['telephone'],
+                    adresse=row['adresse'],
+                    ville=row['ville'],
+                    date_ajout=datetime.fromisoformat(row['date_ajout']).date()
+                ))
+            
+            return contacts
+    
+    def contacts_par_ville(self, ville: str) -> List[Contact]:
+        """Récupère tous les contacts d'une ville"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "SELECT * FROM contacts WHERE ville = ? ORDER BY nom, prenom",
+                (ville,)
+            )
+            
+            return [Contact(
+                id=row['id'],
+                nom=row['nom'],
+                prenom=row['prenom'],
+                email=row['email'],
+                telephone=row['telephone'],
+                adresse=row['adresse'],
+                ville=row['ville'],
+                date_ajout=datetime.fromisoformat(row['date_ajout']).date()
+            ) for row in cursor.fetchall()]
+    
+    def modifier_contact(self, contact_id: int, **modifications) -> bool:
+        """Modifie les informations d'un contact"""
+        if not modifications:
+            return False
+            
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                
+                # Construire la requête dynamiquement
+                champs_valides = {'nom', 'prenom', 'email', 'telephone', 'adresse', 'ville'}
+                champs = []
+                valeurs = []
+                
+                for champ, valeur in modifications.items():
+                    if champ in champs_valides:
+                        champs.append(f"{champ} = ?")
+                        valeurs.append(valeur)
+                
+                if champs:
+                    # Ajouter la date de modification
+                    champs.append("date_modification = ?")
+                    valeurs.append(datetime.now())
+                    
+                    query = f"UPDATE contacts SET {', '.join(champs)} WHERE id = ?"
+                    valeurs.append(contact_id)
+                    
+                    cursor.execute(query, valeurs)
+                    
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        print(f"✅ Contact {contact_id} modifié")
+                        return True
+                    else:
+                        print("❌ Contact non trouvé")
+                        return False
+            
+            return False
+            
+        except sqlite3.IntegrityError:
+            print("❌ Email déjà utilisé par un autre contact")
+            return False
+        except sqlite3.Error as e:
+            print(f"❌ Erreur lors de la modification: {e}")
+            return False
+    
+    def supprimer_contact(self, contact_id: int) -> bool:
+        """Supprime un contact"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+                
+                if cursor.rowcount > 0:
+                    conn.commit()
+                    print(f"✅ Contact {contact_id} supprimé")
+                    return True
+                else:
+                    print("❌ Contact non trouvé")
+                    return False
+                    
+        except sqlite3.Error as e:
+            print(f"❌ Erreur lors de la suppression: {e}")
+            return False
+    
+    def statistiques(self) -> Dict:
+        """Calcule des statistiques sur le carnet"""
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            
+            # Nombre total de contacts
+            cursor.execute("SELECT COUNT(*) FROM contacts")
+            total_contacts = cursor.fetchone()[0]
+            
+            # Répartition par ville
+            cursor.execute("""
+                SELECT ville, COUNT(*) as nombre 
+                FROM contacts 
+                WHERE ville IS NOT NULL 
+                GROUP BY ville 
+                ORDER BY nombre DESC
+            """)
+            par_ville = cursor.fetchall()
+            
+            # Contacts récents (7 derniers jours)
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM contacts 
+                WHERE date_ajout >= date('now', '-7 days')
+            """)
+            recents = cursor.fetchone()[0]
+            
+            # Contacts avec email
+            cursor.execute("SELECT COUNT(*) FROM contacts WHERE email IS NOT NULL")
+            avec_email = cursor.fetchone()[0]
+            
+            # Contacts avec téléphone
+            cursor.execute("SELECT COUNT(*) FROM contacts WHERE telephone IS NOT NULL")
+            avec_telephone = cursor.fetchone()[0]
+            
+            return {
+                'total_contacts': total_contacts,
+                'repartition_villes': par_ville,
+                'contacts_recents': recents,
+                'avec_email': avec_email,
+                'avec_telephone': avec_telephone,
+                'pourcentage_email': round((avec_email / total_contacts) * 100, 1) if total_contacts > 0 else 0,
+                'pourcentage_telephone': round((avec_telephone / total_contacts) * 100, 1) if total_contacts > 0 else 0
+            }
+    
+    def exporter_json(self, fichier: str = None) -> str:
+        """Exporte tous les contacts en JSON"""
+        if not fichier:
+            fichier = f"contacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        contacts = self.lister_contacts()
+        data = {
+            'export_date': datetime.now().isoformat(),
+            'total_contacts': len(contacts),
+            'contacts': [asdict(contact) for contact in contacts]
+        }
+        
+        # Convertir les dates en string pour JSON
+        for contact in data['contacts']:
+            if contact['date_ajout']:
+                contact['date_ajout'] = contact['date_ajout'].isoformat()
+        
+        with open(fichier, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        print(f"✅ Contacts exportés vers {fichier}")
+        return fichier
+    
+    def importer_json(self, fichier: str) -> int:
+        """Importe des contacts depuis un fichier JSON"""
+        try:
+            with open(fichier, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            contacts_ajoutes = 0
+            
+            for contact_data in data.get('contacts', []):
+                # Convertir la date string en date
+                if 'date_ajout' in contact_data and contact_data['date_ajout']:
+                    contact_data['date_ajout'] = datetime.fromisoformat(contact_data['date_ajout']).date()
+                
+                # Retirer l'ID pour éviter les conflits
+                contact_data.pop('id', None)
+                
+                contact = Contact(**contact_data)
+                if self.ajouter_contact(contact):
+                    contacts_ajoutes += 1
+            
+            print(f"✅ {contacts_ajoutes} contacts importés sur {len(data.get('contacts', []))}")
+            return contacts_ajoutes
+            
+        except FileNotFoundError:
+            print(f"❌ Fichier {fichier} non trouvé")
+            return 0
+        except json.JSONDecodeError:
+            print("❌ Fichier JSON invalide")
+            return 0
+        except Exception as e:
+            print(f"❌ Erreur lors de l'import: {e}")
+            return 0
+
+def menu_carnet():
+    """Menu interactif pour le carnet d'adresses"""
+    carnet = CarnetAdresses()
+    
+    while True:
+        print("\\n" + "="*50)
+        print("           CARNET D'ADRESSES")
+        print("="*50)
+        print("1. Ajouter un contact")
+        print("2. Rechercher des contacts")
+        print("3. Lister tous les contacts")
+        print("4. Contacts par ville")
+        print("5. Modifier un contact")
+        print("6. Supprimer un contact")
+        print("7. Statistiques")
+        print("8. Exporter en JSON")
+        print("9. Importer depuis JSON")
+        print("0. Quitter")
+        
+        choix = input("\\nVotre choix: ").strip()
+        
+        if choix == '1':
+            # Ajouter un contact
+            print("\\n--- Ajouter un contact ---")
+            nom = input("Nom: ").strip()
+            prenom = input("Prénom: ").strip()
+            email = input("Email: ").strip() or None
+            telephone = input("Téléphone: ").strip() or None
+            adresse = input("Adresse: ").strip() or None
+            ville = input("Ville: ").strip() or None
+            
+            if nom and prenom:
+                contact = Contact(nom, prenom, email, telephone, adresse, ville)
+                carnet.ajouter_contact(contact)
+            else:
+                print("❌ Nom et prénom obligatoires")
+        
+        elif choix == '2':
+            # Rechercher
+            terme = input("\\nTerme de recherche: ").strip()
+            if terme:
+                resultats = carnet.rechercher_contacts(terme)
+                print(f"\\n{len(resultats)} résultat(s) trouvé(s):")
+                for contact in resultats:
+                    print(f"  {contact.prenom} {contact.nom} - {contact.email or 'Pas d\\'email'} - {contact.ville or 'Pas de ville'}")
+        
+        elif choix == '3':
+            # Lister tous
+            contacts = carnet.lister_contacts()
+            print(f"\\n{len(contacts)} contact(s) total:")
+            for contact in contacts:
+                print(f"  {contact.prenom} {contact.nom} ({contact.ville or 'Ville inconnue'})")
+        
+        elif choix == '7':
+            # Statistiques
+            stats = carnet.statistiques()
+            print("\\n--- Statistiques ---")
+            print(f"Total de contacts: {stats['total_contacts']}")
+            print(f"Contacts récents (7j): {stats['contacts_recents']}")
+            print(f"Avec email: {stats['avec_email']} ({stats['pourcentage_email']}%)")
+            print(f"Avec téléphone: {stats['avec_telephone']} ({stats['pourcentage_telephone']}%)")
+            
+            print("\\nRépartition par ville:")
+            for ville, nombre in stats['repartition_villes'][:5]:
+                print(f"  {ville}: {nombre} contact(s)")
+        
+        elif choix == '8':
+            # Export JSON
+            fichier = carnet.exporter_json()
+        
+        elif choix == '0':
+            print("À bientôt ! 👋")
+            break
+        
+        else:
+            print("❌ Choix invalide")
+
+def demo_carnet():
+    """Démonstration du carnet d'adresses"""
+    carnet = CarnetAdresses()
+    
+    # Ajouter quelques contacts d'exemple
+    contacts_test = [
+        Contact("Dupont", "Jean", "jean.dupont@email.com", "0123456789", "1 rue de la Paix", "Paris"),
+        Contact("Martin", "Sophie", "sophie.martin@email.com", "0987654321", "5 avenue Victor Hugo", "Lyon"),
+        Contact("Durand", "Pierre", "pierre.durand@email.com", None, "10 boulevard Saint-Michel", "Paris"),
+        Contact("Moreau", "Marie", "marie.moreau@email.com", "0147258369", None, "Marseille"),
+        Contact("Garcia", "Carlos", None, "0654321987", "2 place du Marché", "Toulouse")
+    ]
+    
+    print("=== Ajout de contacts de test ===")
+    for contact in contacts_test:
+        carnet.ajouter_contact(contact)
+    
+    print("\\n=== Recherche 'Dupont' ===")
+    resultats = carnet.rechercher_contacts("Dupont")
+    for contact in resultats:
+        print(f"Trouvé: {contact.prenom} {contact.nom}")
+    
+    print("\\n=== Contacts de Paris ===")
+    parisiens = carnet.contacts_par_ville("Paris")
+    for contact in parisiens:
+        print(f"Parisien: {contact.prenom} {contact.nom}")
+    
+    print("\\n=== Statistiques ===")
+    stats = carnet.statistiques()
+    print(f"Total: {stats['total_contacts']} contacts")
+    print(f"Avec email: {stats['pourcentage_email']}%")
+    
+    print("\\n=== Export JSON ===")
+    fichier_export = carnet.exporter_json()
+
+if __name__ == "__main__":
+    # Choisir entre démo et menu interactif
+    choix = input("Démo automatique (d) ou menu interactif (m) ? ").lower()
+    
+    if choix == 'd':
+        demo_carnet()
+    else:
+        menu_carnet()''',
+                    'exercice': '''## 🎯 Exercice : Gestionnaire de notes d'étudiants (SQLite)
+
+**Objectif :** Créer un système de gestion des notes avec SQLite
+
+### Partie 1 : Structure de base
+
+Créez un système avec les tables suivantes :
+
+#### Table des étudiants
+```sql
+CREATE TABLE etudiants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    date_naissance DATE,
+    classe TEXT NOT NULL,
+    date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Table des matières
+```sql
+CREATE TABLE matieres (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL UNIQUE,
+    coefficient REAL DEFAULT 1.0,
+    couleur TEXT DEFAULT '#3498db'
+);
+```
+
+#### Table des notes
+```sql
+CREATE TABLE notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    etudiant_id INTEGER NOT NULL,
+    matiere_id INTEGER NOT NULL,
+    note REAL CHECK(note >= 0 AND note <= 20),
+    type_evaluation TEXT NOT NULL,
+    date_evaluation DATE NOT NULL,
+    commentaire TEXT,
+    FOREIGN KEY (etudiant_id) REFERENCES etudiants (id),
+    FOREIGN KEY (matiere_id) REFERENCES matieres (id)
+);
+```
+
+### Partie 2 : Classes Python
+
+```python
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import List, Optional, Dict
+import sqlite3
+
+@dataclass
+class Etudiant:
+    nom: str
+    prenom: str
+    email: str
+    classe: str
+    date_naissance: date = None
+    id: Optional[int] = None
+
+@dataclass
+class Matiere:
+    nom: str
+    coefficient: float = 1.0
+    couleur: str = '#3498db'
+    id: Optional[int] = None
+
+@dataclass
+class Note:
+    etudiant_id: int
+    matiere_id: int
+    note: float
+    type_evaluation: str
+    date_evaluation: date
+    commentaire: str = None
+    id: Optional[int] = None
+
+class GestionnaireNotes:
+    def __init__(self, db_name="notes_etudiants.db"):
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        """Initialise la base de données"""
+        # À implémenter
+        pass
+    
+    # === GESTION DES ÉTUDIANTS ===
+    
+    def ajouter_etudiant(self, etudiant: Etudiant) -> Optional[int]:
+        """Ajoute un nouvel étudiant"""
+        # À implémenter avec validation email unique
+        pass
+    
+    def lister_etudiants(self, classe: str = None) -> List[Etudiant]:
+        """Liste les étudiants, optionnellement par classe"""
+        pass
+    
+    def rechercher_etudiants(self, terme: str) -> List[Etudiant]:
+        """Recherche par nom, prénom ou email"""
+        pass
+    
+    # === GESTION DES MATIÈRES ===
+    
+    def ajouter_matiere(self, matiere: Matiere) -> Optional[int]:
+        """Ajoute une nouvelle matière"""
+        pass
+    
+    def lister_matieres(self) -> List[Matiere]:
+        """Liste toutes les matières"""
+        pass
+    
+    # === GESTION DES NOTES ===
+    
+    def ajouter_note(self, note: Note) -> Optional[int]:
+        """Ajoute une note"""
+        # Validation : note entre 0 et 20
+        pass
+    
+    def notes_etudiant(self, etudiant_id: int, matiere_id: int = None) -> List[Note]:
+        """Récupère les notes d'un étudiant"""
+        pass
+    
+    def notes_matiere(self, matiere_id: int, classe: str = None) -> List[Dict]:
+        """Notes d'une matière, optionnellement par classe"""
+        pass
+    
+    # === CALCULS ET STATISTIQUES ===
+    
+    def moyenne_etudiant(self, etudiant_id: int, matiere_id: int = None) -> float:
+        """Calcule la moyenne d'un étudiant"""
+        # Si matiere_id est None, moyenne générale avec coefficients
+        pass
+    
+    def moyenne_classe(self, classe: str, matiere_id: int = None) -> float:
+        """Calcule la moyenne d'une classe"""
+        pass
+    
+    def rang_etudiant(self, etudiant_id: int, classe: str) -> int:
+        """Détermine le rang d'un étudiant dans sa classe"""
+        pass
+    
+    def bulletin_etudiant(self, etudiant_id: int) -> Dict:
+        """Génère le bulletin complet d'un étudiant"""
+        # Inclure :
+        # - Moyenne par matière
+        # - Moyenne générale
+        # - Rang dans la classe
+        # - Nombre de notes par matière
+        pass
+    
+    def statistiques_matiere(self, matiere_id: int) -> Dict:
+        """Statistiques complètes d'une matière"""
+        # Inclure :
+        # - Moyenne générale
+        # - Note min/max
+        # - Nombre d'étudiants
+        # - Répartition des notes
+        pass
+```
+
+### Partie 3 : Fonctionnalités avancées
+
+#### A. Système de mentions
+```python
+def obtenir_mention(self, moyenne: float) -> str:
+    """Détermine la mention selon la moyenne"""
+    if moyenne >= 16:
+        return "Très Bien"
+    elif moyenne >= 14:
+        return "Bien"
+    elif moyenne >= 12:
+        return "Assez Bien"
+    elif moyenne >= 10:
+        return "Passable"
+    else:
+        return "Insuffisant"
+
+def repartition_mentions(self, classe: str) -> Dict:
+    """Répartition des mentions dans une classe"""
+    pass
+```
+
+#### B. Analyses temporelles
+```python
+def evolution_notes_etudiant(self, etudiant_id: int, matiere_id: int) -> List[Dict]:
+    """Évolution des notes dans le temps"""
+    pass
+
+def evolution_moyenne_classe(self, classe: str, matiere_id: int) -> List[Dict]:
+    """Évolution de la moyenne de classe"""
+    pass
+```
+
+#### C. Import/Export
+```python
+def importer_notes_csv(self, fichier: str) -> int:
+    """Importe des notes depuis un CSV"""
+    # Format: nom,prenom,matiere,note,type_evaluation,date
+    pass
+
+def exporter_bulletin_pdf(self, etudiant_id: int) -> str:
+    """Exporte un bulletin en PDF (bonus)"""
+    pass
+
+def exporter_statistiques_classe(self, classe: str, format_sortie: str = "json") -> str:
+    """Exporte les statistiques d'une classe"""
+    pass
+```
+
+### Partie 4 : Interface utilisateur
+
+Créez un menu avec :
+
+1. **Gestion des étudiants**
+   - Ajouter/modifier un étudiant
+   - Lister par classe
+   - Rechercher
+
+2. **Gestion des matières**
+   - Ajouter une matière
+   - Modifier coefficients
+   - Lister toutes
+
+3. **Saisie des notes**
+   - Ajouter une note
+   - Notes par étudiant
+   - Notes par matière
+
+4. **Bulletins et moyennes**
+   - Bulletin individuel
+   - Moyennes de classe
+   - Classements
+
+5. **Statistiques**
+   - Par matière
+   - Par classe
+   - Évolutions temporelles
+
+### Partie 5 : Données de test
+
+Créez des données réalistes :
+```python
+def creer_donnees_test():
+    """Crée des données de test"""
+    # 3 classes : 6èmeA, 5èmeB, 4èmeC
+    # 5-8 étudiants par classe
+    # 5 matières : Math, Français, Anglais, Histoire, Sciences
+    # 3-5 notes par étudiant par matière
+    pass
+```
+
+### Partie 6 : Tests
+
+```python
+import unittest
+
+class TestGestionnaireNotes(unittest.TestCase):
+    def setUp(self):
+        self.gestionnaire = GestionnaireNotes("test_notes.db")
+    
+    def test_calcul_moyenne(self):
+        """Test du calcul de moyenne"""
+        # Tester avec différents coefficients
+        pass
+    
+    def test_rang_etudiant(self):
+        """Test du calcul de rang"""
+        pass
+    
+    def test_contraintes(self):
+        """Test des contraintes (note 0-20, etc.)"""
+        pass
+```
+
+### Fonctionnalités bonus
+
+1. **Graphiques** de progression avec matplotlib
+2. **Système d'alertes** pour notes faibles
+3. **Prédictions** de moyenne finale
+4. **Comparaisons** entre classes/années
+5. **Notifications** par email aux parents
+6. **Interface web** avec Flask
+7. **API REST** pour mobile
+
+### Données de test CSV
+
+Créez `notes_test.csv` :
+```csv
+nom,prenom,email,classe,matiere,note,type_evaluation,date_evaluation
+Dupont,Alice,alice.dupont@school.com,6èmeA,Mathématiques,15.5,Contrôle,2024-01-15
+Dupont,Alice,alice.dupont@school.com,6èmeA,Français,14.0,Rédaction,2024-01-20
+Martin,Bob,bob.martin@school.com,6èmeA,Mathématiques,12.0,Contrôle,2024-01-15
+Martin,Bob,bob.martin@school.com,6èmeA,Français,16.5,Rédaction,2024-01-20
+```
+
+### Critères de réussite
+
+- ✅ Structure de base fonctionnelle
+- ✅ Calculs de moyennes corrects (avec coefficients)
+- ✅ Système de rang et classements
+- ✅ Bulletins complets et lisibles
+- ✅ Import/export de données
+- ✅ Interface utilisateur ergonomique
+- ✅ Statistiques pertinentes
+- ✅ Performance correcte (500+ étudiants)
+
+**Challenge :** Le système doit gérer un collège entier ! 🎓'''
+                }
+            )
 
         # Cours 4: Python Expert (renommé et réordonné)  
         cours_expert, created = Cours.objects.get_or_create(
