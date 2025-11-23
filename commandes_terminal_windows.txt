@@ -1,0 +1,112 @@
+===============================================
+COMMANDES PRINCIPALES DU TERMINAL WINDOWS
+===============================================
+
+🗂️  NAVIGATION DANS LES DOSSIERS
+===============================================
+dir                     → Afficher le contenu du dossier actuel
+cd [dossier]           → Aller dans un dossier
+cd ..                  → Remonter d'un niveau (dossier parent)
+cd \                   → Aller à la racine du disque
+cd /d D:               → Changer de disque (aller sur le disque D:)
+pwd                    → Afficher le chemin actuel (PowerShell)
+
+📁  GESTION DES FICHIERS ET DOSSIERS
+===============================================
+mkdir [nom]            → Créer un nouveau dossier
+md [nom]               → Créer un nouveau dossier (alias)
+rmdir [nom]            → Supprimer un dossier vide
+rmdir /s [nom]         → Supprimer un dossier et son contenu
+del [fichier]          → Supprimer un fichier
+copy [source] [dest]   → Copier un fichier
+move [source] [dest]   → Déplacer/renommer un fichier
+ren [ancien] [nouveau] → Renommer un fichier
+
+📄  AFFICHAGE DES FICHIERS
+===============================================
+type [fichier]         → Afficher le contenu d'un fichier
+more [fichier]         → Afficher le contenu page par page
+notepad [fichier]      → Ouvrir un fichier dans le Bloc-notes
+start [fichier]        → Ouvrir un fichier avec l'application par défaut
+
+🔍  RECHERCHE
+===============================================
+find "texte" [fichier] → Chercher du texte dans un fichier
+findstr "texte" *.txt  → Chercher dans plusieurs fichiers
+where [commande]       → Trouver l'emplacement d'un programme
+
+⚙️  SYSTÈME
+===============================================
+cls                    → Effacer l'écran
+exit                   → Fermer le terminal
+tasklist               → Afficher les processus en cours
+taskkill /PID [id]     → Arrêter un processus
+systeminfo             → Informations système
+date                   → Afficher/modifier la date
+time                   → Afficher/modifier l'heure
+
+🌐  RÉSEAU
+===============================================
+ping [adresse]         → Tester la connexion à une adresse
+ipconfig               → Afficher la configuration réseau
+ipconfig /all          → Afficher tous les détails réseau
+nslookup [site]        → Résoudre un nom de domaine
+
+🐍  PYTHON (si installé)
+===============================================
+python                 → Lancer l'interpréteur Python
+python [fichier.py]    → Exécuter un script Python
+python -m pip install [package] → Installer un package Python
+python --version       → Voir la version de Python
+
+📦  GIT (si installé)
+===============================================
+git status             → Voir l'état du dépôt
+git add .              → Ajouter tous les changements
+git commit -m "message" → Créer un commit
+git push               → Envoyer vers le dépôt distant
+git pull               → Récupérer les changements distants
+git clone [url]        → Cloner un dépôt
+
+💡  ASTUCES UTILES
+===============================================
+↑ ↓                    → Naviguer dans l'historique des commandes
+Tab                    → Complétion automatique
+Ctrl + C               → Interrompre la commande en cours
+Ctrl + A               → Sélectionner tout le texte
+F7                     → Voir l'historique des commandes
+
+🔧  COMMANDES POWERSHELL AVANCÉES
+===============================================
+Get-Location           → Chemin actuel (comme pwd)
+Set-Location           → Changer de dossier (comme cd)
+Get-ChildItem          → Lister le contenu (comme dir)
+New-Item -ItemType Directory → Créer un dossier
+Remove-Item            → Supprimer un fichier/dossier
+Get-Content [fichier]  → Lire un fichier
+Set-Content            → Écrire dans un fichier
+
+📝  EXEMPLES PRATIQUES
+===============================================
+# Naviguer vers le bureau
+cd C:\Users\%USERNAME%\Desktop
+
+# Créer un projet Python
+mkdir mon_projet
+cd mon_projet
+echo print("Hello World!") > hello.py
+python hello.py
+
+# Voir les fichiers .py du dossier
+dir *.py
+
+# Copier un fichier
+copy hello.py hello_backup.py
+
+# Chercher du texte dans les fichiers
+findstr "print" *.py
+
+===============================================
+💡 CONSEIL : Utilisez Tab pour l'autocomplétion 
+et ↑↓ pour naviguer dans l'historique !
+===============================================
