@@ -16,8 +16,18 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here-
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Configuration ALLOWED_HOSTS pour Railway
-import os
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = [
+    'web-production-42ab3.up.railway.app',
+    '*.railway.app',
+    '*.up.railway.app',
+    '127.0.0.1',
+    'localhost'
+]
+
+# Aussi lire depuis les variables d'environnement si disponibles
+env_hosts = os.environ.get('ALLOWED_HOSTS')
+if env_hosts:
+    ALLOWED_HOSTS.extend(env_hosts.split(','))
 
 
 # Application definition
