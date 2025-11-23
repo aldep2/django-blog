@@ -3654,7 +3654,1064 @@ def test_edge_cases():
                 }
             )
 
-        # Cours 4: Python Expert (renommé et réordonné)
+            # Chapitre 4: Modules et Packages
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='modules-packages',
+                defaults={
+                    'titre': 'Modules et Packages',
+                    'ordre': 3,
+                    'contenu': '''# Modules et Packages Python
+
+## 📦 Qu'est-ce qu'un module ?
+
+Un **module** est un fichier Python (.py) qui contient du code réutilisable : fonctions, classes, variables. Les **packages** sont des dossiers qui regroupent plusieurs modules.
+
+## 🔧 Créer et utiliser un module simple
+
+### Créer un module
+Créez un fichier `mathutils.py` :
+
+```python
+# mathutils.py
+"""Module d'utilitaires mathématiques"""
+
+PI = 3.14159
+
+def calculer_aire_cercle(rayon):
+    """Calcule l'aire d'un cercle"""
+    return PI * rayon ** 2
+
+def calculer_factorielle(n):
+    """Calcule la factorielle de n"""
+    if n <= 1:
+        return 1
+    return n * calculer_factorielle(n - 1)
+
+def est_premier(nombre):
+    """Vérifie si un nombre est premier"""
+    if nombre < 2:
+        return False
+    for i in range(2, int(nombre ** 0.5) + 1):
+        if nombre % i == 0:
+            return False
+    return True
+
+class Calculatrice:
+    """Classe calculatrice simple"""
+    def __init__(self):
+        self.historique = []
+    
+    def additionner(self, a, b):
+        resultat = a + b
+        self.historique.append(f"{a} + {b} = {resultat}")
+        return resultat
+```
+
+### Utiliser le module
+Dans un autre fichier :
+
+```python
+# main.py
+import mathutils
+
+# Utiliser les fonctions du module
+print(f"Aire du cercle (rayon=5): {mathutils.calculer_aire_cercle(5)}")
+print(f"Factorielle de 5: {mathutils.calculer_factorielle(5)}")
+print(f"7 est premier: {mathutils.est_premier(7)}")
+
+# Utiliser la classe
+calc = mathutils.Calculatrice()
+resultat = calc.additionner(10, 20)
+print(f"Résultat: {resultat}")
+```
+
+## 🎯 Différentes façons d'importer
+
+### 1. Import complet du module
+```python
+import mathutils
+
+aire = mathutils.calculer_aire_cercle(3)
+```
+
+### 2. Import avec alias
+```python
+import mathutils as math_tools
+
+aire = math_tools.calculer_aire_cercle(3)
+```
+
+### 3. Import spécifique
+```python
+from mathutils import calculer_aire_cercle, PI
+
+aire = calculer_aire_cercle(3)
+print(f"Pi = {PI}")
+```
+
+### 4. Import avec alias spécifique
+```python
+from mathutils import calculer_aire_cercle as aire_cercle
+
+aire = aire_cercle(3)
+```
+
+### 5. Import de tout (⚠️ à éviter)
+```python
+from mathutils import *  # Importe tout - peut créer des conflits
+
+aire = calculer_aire_cercle(3)
+```
+
+## 📁 Créer un package
+
+Un **package** est un dossier contenant un fichier `__init__.py` :
+
+```
+mon_package/
+    __init__.py
+    module1.py
+    module2.py
+    sous_package/
+        __init__.py
+        module3.py
+```
+
+### Exemple de package utilitaires
+
+```
+utils/
+    __init__.py
+    fichiers.py
+    dates.py
+    validation.py
+```
+
+**utils/__init__.py** :
+```python
+"""Package d'utilitaires généraux"""
+
+# Rendre disponibles les fonctions principales
+from .fichiers import lire_fichier, ecrire_fichier
+from .dates import formater_date, calculer_age
+from .validation import valider_email, valider_telephone
+
+# Version du package
+__version__ = "1.0.0"
+
+# Ce qui est exporté avec "from utils import *"
+__all__ = ['lire_fichier', 'ecrire_fichier', 'formater_date', 
+           'calculer_age', 'valider_email', 'valider_telephone']
+```
+
+**utils/fichiers.py** :
+```python
+"""Utilitaires pour la gestion des fichiers"""
+
+import os
+from pathlib import Path
+
+def lire_fichier(chemin):
+    """Lit un fichier texte de façon sécurisée"""
+    try:
+        with open(chemin, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Fichier {chemin} introuvable")
+        return None
+    except Exception as e:
+        print(f"Erreur lors de la lecture: {e}")
+        return None
+
+def ecrire_fichier(chemin, contenu):
+    """Écrit dans un fichier avec création du dossier si nécessaire"""
+    try:
+        # Créer le dossier parent si nécessaire
+        Path(chemin).parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(chemin, 'w', encoding='utf-8') as f:
+            f.write(contenu)
+        return True
+    except Exception as e:
+        print(f"Erreur lors de l'écriture: {e}")
+        return False
+
+def lister_fichiers(dossier, extension=None):
+    """Liste les fichiers d'un dossier avec filtrage optionnel"""
+    fichiers = []
+    try:
+        for fichier in os.listdir(dossier):
+            chemin_complet = os.path.join(dossier, fichier)
+            if os.path.isfile(chemin_complet):
+                if extension is None or fichier.endswith(extension):
+                    fichiers.append(fichier)
+        return fichiers
+    except Exception as e:
+        print(f"Erreur lors du listage: {e}")
+        return []
+```
+
+**utils/dates.py** :
+```python
+"""Utilitaires pour la gestion des dates"""
+
+from datetime import datetime, date, timedelta
+
+def formater_date(date_obj, format_sortie="%d/%m/%Y"):
+    """Formate une date selon le format spécifié"""
+    if isinstance(date_obj, str):
+        # Essayer de parser la date
+        try:
+            date_obj = datetime.strptime(date_obj, "%Y-%m-%d").date()
+        except ValueError:
+            return "Date invalide"
+    
+    return date_obj.strftime(format_sortie)
+
+def calculer_age(date_naissance):
+    """Calcule l'âge à partir d'une date de naissance"""
+    if isinstance(date_naissance, str):
+        try:
+            date_naissance = datetime.strptime(date_naissance, "%d/%m/%Y").date()
+        except ValueError:
+            return None
+    
+    aujourd_hui = date.today()
+    age = aujourd_hui.year - date_naissance.year
+    
+    # Ajuster si l'anniversaire n'est pas encore passé cette année
+    if (aujourd_hui.month, aujourd_hui.day) < (date_naissance.month, date_naissance.day):
+        age -= 1
+    
+    return age
+
+def ajouter_jours(date_base, nb_jours):
+    """Ajoute un nombre de jours à une date"""
+    if isinstance(date_base, str):
+        date_base = datetime.strptime(date_base, "%d/%m/%Y").date()
+    
+    return date_base + timedelta(days=nb_jours)
+```
+
+### Utiliser le package
+```python
+# Import du package complet
+import utils
+
+contenu = utils.lire_fichier("test.txt")
+age = utils.calculer_age("15/05/1990")
+
+# Import spécifique
+from utils import lire_fichier, calculer_age
+from utils.validation import valider_email
+
+# Import de sous-modules
+from utils.dates import formater_date, ajouter_jours
+```
+
+## 🌟 Modules de la bibliothèque standard
+
+### os - Système d'exploitation
+```python
+import os
+
+# Informations sur le système
+print(f"Système: {os.name}")
+print(f"Dossier courant: {os.getcwd()}")
+print(f"Variables d'environnement: {os.environ.get('HOME', 'Non défini')}")
+
+# Manipulation de chemins
+chemin = os.path.join("dossier", "fichier.txt")
+print(f"Chemin: {chemin}")
+print(f"Dossier parent: {os.path.dirname(chemin)}")
+print(f"Nom du fichier: {os.path.basename(chemin)}")
+```
+
+### datetime - Dates et heures
+```python
+from datetime import datetime, date, timedelta
+
+# Date et heure actuelles
+maintenant = datetime.now()
+aujourd_hui = date.today()
+
+print(f"Maintenant: {maintenant}")
+print(f"Aujourd'hui: {aujourd_hui}")
+
+# Manipulation des dates
+dans_une_semaine = aujourd_hui + timedelta(days=7)
+print(f"Dans une semaine: {dans_une_semaine}")
+
+# Formatage
+print(f"Format français: {maintenant.strftime('%d/%m/%Y à %H:%M')}")
+```
+
+### random - Nombres aléatoires
+```python
+import random
+
+# Nombre aléatoire
+nombre = random.randint(1, 10)
+print(f"Nombre aléatoire: {nombre}")
+
+# Choix aléatoire dans une liste
+couleurs = ["rouge", "vert", "bleu", "jaune"]
+couleur_choisie = random.choice(couleurs)
+print(f"Couleur: {couleur_choisie}")
+
+# Mélanger une liste
+cartes = list(range(1, 53))
+random.shuffle(cartes)
+print(f"Cartes mélangées: {cartes[:5]}...")
+```
+
+### json - Manipulation JSON
+```python
+import json
+
+# Données Python vers JSON
+data = {
+    "nom": "Alice",
+    "age": 30,
+    "langages": ["Python", "JavaScript", "SQL"]
+}
+
+json_string = json.dumps(data, ensure_ascii=False, indent=2)
+print(f"JSON:\\n{json_string}")
+
+# JSON vers Python
+data_retour = json.loads(json_string)
+print(f"Données récupérées: {data_retour}")
+
+# Fichier JSON
+with open("data.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+
+with open("data.json", "r", encoding="utf-8") as f:
+    data_fichier = json.load(f)
+```
+
+## 🔍 Introspection de modules
+
+```python
+import mathutils
+
+# Voir le contenu d'un module
+print(f"Contenu du module: {dir(mathutils)}")
+
+# Documentation
+print(f"Documentation: {mathutils.__doc__}")
+
+# Chemin du fichier
+print(f"Fichier: {mathutils.__file__}")
+
+# Vérifier si un attribut existe
+if hasattr(mathutils, 'PI'):
+    print(f"PI = {mathutils.PI}")
+
+# Obtenir un attribut dynamiquement
+fonction = getattr(mathutils, 'calculer_aire_cercle', None)
+if fonction:
+    print(f"Aire: {fonction(5)}")
+```
+
+## 📋 if __name__ == "__main__"
+
+```python
+# Dans mathutils.py
+def fonction_utile():
+    return "Je suis une fonction utile"
+
+def tests():
+    """Tests du module"""
+    print("Test des fonctions...")
+    print(f"Aire cercle (r=5): {calculer_aire_cercle(5)}")
+    print(f"Factorielle(4): {calculer_factorielle(4)}")
+
+# Ce code s'exécute seulement si le fichier est lancé directement
+if __name__ == "__main__":
+    print("Module mathutils exécuté directement")
+    tests()
+else:
+    print("Module mathutils importé")
+```
+
+## 🛠️ Installer des modules externes
+
+### Avec pip
+```bash
+# Installer un package
+pip install requests
+
+# Installer une version spécifique
+pip install Django==4.2
+
+# Installer à partir d'un fichier requirements
+pip install -r requirements.txt
+
+# Lister les packages installés
+pip list
+
+# Voir les détails d'un package
+pip show requests
+```
+
+### requirements.txt
+```
+requests==2.28.1
+beautifulsoup4==4.11.1
+pandas==1.5.2
+matplotlib==3.6.2
+```
+
+## 💡 Bonnes pratiques
+
+1. **Organisation claire** : Un module = une responsabilité
+2. **Documentation** : Docstrings pour modules, classes et fonctions
+3. **Tests** : Utilisez `if __name__ == "__main__"` pour les tests
+4. **Imports explicites** : Évitez `from module import *`
+5. **Gestion d'erreurs** : Try/except dans les fonctions critiques
+
+Les modules permettent d'organiser et de réutiliser efficacement votre code Python ! 📦''',
+                    'code_exemple': '''# Exemple complet : Package de gestion de données
+
+# Structure du package:
+# data_manager/
+#   __init__.py
+#   csv_handler.py
+#   json_handler.py
+#   validator.py
+#   utils.py
+
+# data_manager/__init__.py
+"""
+Package de gestion de données
+Supporte CSV, JSON avec validation
+"""
+
+from .csv_handler import CSVManager
+from .json_handler import JSONManager
+from .validator import DataValidator
+from .utils import nettoyer_donnees, statistiques_simples
+
+__version__ = "2.0.0"
+__author__ = "Votre Nom"
+
+# Configuration par défaut
+DEFAULT_ENCODING = 'utf-8'
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+# data_manager/csv_handler.py
+import csv
+import os
+from typing import List, Dict, Any, Optional
+
+class CSVManager:
+    """Gestionnaire de fichiers CSV avec validation"""
+    
+    def __init__(self, encoding='utf-8', delimiter=','):
+        self.encoding = encoding
+        self.delimiter = delimiter
+        self.data = []
+        self.headers = []
+    
+    def lire_csv(self, fichier: str) -> List[Dict[str, Any]]:
+        """Lit un fichier CSV et retourne une liste de dictionnaires"""
+        try:
+            if not os.path.exists(fichier):
+                raise FileNotFoundError(f"Fichier {fichier} introuvable")
+            
+            # Vérifier la taille du fichier
+            taille = os.path.getsize(fichier)
+            if taille > 50 * 1024 * 1024:  # 50MB
+                raise ValueError(f"Fichier trop volumineux: {taille} octets")
+            
+            with open(fichier, 'r', encoding=self.encoding, newline='') as f:
+                # Détecter automatiquement le délimiteur
+                sample = f.read(1024)
+                f.seek(0)
+                
+                sniffer = csv.Sniffer()
+                if sniffer.has_header(sample):
+                    delimiter = sniffer.sniff(sample).delimiter
+                else:
+                    delimiter = self.delimiter
+                
+                reader = csv.DictReader(f, delimiter=delimiter)
+                self.headers = reader.fieldnames or []
+                self.data = list(reader)
+                
+                print(f"✅ CSV lu: {len(self.data)} lignes, {len(self.headers)} colonnes")
+                return self.data
+                
+        except UnicodeDecodeError:
+            print(f"❌ Erreur d'encodage. Essayez avec encoding='latin1'")
+            return []
+        except Exception as e:
+            print(f"❌ Erreur lors de la lecture CSV: {e}")
+            return []
+    
+    def ecrire_csv(self, fichier: str, donnees: List[Dict], 
+                   headers: Optional[List[str]] = None) -> bool:
+        """Écrit des données dans un fichier CSV"""
+        try:
+            if not donnees:
+                print("⚠️ Aucune donnée à écrire")
+                return False
+            
+            # Utiliser les headers fournis ou déduire des données
+            if headers is None:
+                headers = list(donnees[0].keys()) if donnees else []
+            
+            # Créer le dossier parent si nécessaire
+            os.makedirs(os.path.dirname(fichier) if os.path.dirname(fichier) else '.', exist_ok=True)
+            
+            with open(fichier, 'w', encoding=self.encoding, newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=headers, delimiter=self.delimiter)
+                writer.writeheader()
+                writer.writerows(donnees)
+            
+            print(f"✅ CSV écrit: {fichier} ({len(donnees)} lignes)")
+            return True
+            
+        except PermissionError:
+            print(f"❌ Pas de permission pour écrire {fichier}")
+            return False
+        except Exception as e:
+            print(f"❌ Erreur lors de l'écriture CSV: {e}")
+            return False
+    
+    def filtrer(self, colonne: str, valeur: Any) -> List[Dict]:
+        """Filtre les données selon une colonne et valeur"""
+        return [ligne for ligne in self.data if ligne.get(colonne) == str(valeur)]
+    
+    def trier(self, colonne: str, reverse=False) -> List[Dict]:
+        """Trie les données selon une colonne"""
+        try:
+            return sorted(self.data, key=lambda x: x.get(colonne, ''), reverse=reverse)
+        except Exception as e:
+            print(f"❌ Erreur lors du tri: {e}")
+            return self.data
+    
+    def statistiques(self) -> Dict[str, Any]:
+        """Retourne des statistiques sur les données"""
+        if not self.data:
+            return {}
+        
+        stats = {
+            'nombre_lignes': len(self.data),
+            'nombre_colonnes': len(self.headers),
+            'colonnes': self.headers,
+            'valeurs_manquantes': {}
+        }
+        
+        # Compter les valeurs manquantes par colonne
+        for header in self.headers:
+            manquantes = sum(1 for ligne in self.data if not ligne.get(header, '').strip())
+            stats['valeurs_manquantes'][header] = manquantes
+        
+        return stats
+
+# data_manager/json_handler.py
+import json
+import os
+from typing import Dict, List, Any, Union
+
+class JSONManager:
+    """Gestionnaire de fichiers JSON avec validation"""
+    
+    def __init__(self, encoding='utf-8', indent=2):
+        self.encoding = encoding
+        self.indent = indent
+        self.data = None
+    
+    def lire_json(self, fichier: str) -> Union[Dict, List, None]:
+        """Lit un fichier JSON"""
+        try:
+            if not os.path.exists(fichier):
+                raise FileNotFoundError(f"Fichier {fichier} introuvable")
+            
+            with open(fichier, 'r', encoding=self.encoding) as f:
+                self.data = json.load(f)
+            
+            print(f"✅ JSON lu: {fichier}")
+            return self.data
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Erreur JSON ligne {e.lineno}, colonne {e.colno}: {e.msg}")
+            return None
+        except Exception as e:
+            print(f"❌ Erreur lors de la lecture JSON: {e}")
+            return None
+    
+    def ecrire_json(self, fichier: str, donnees: Union[Dict, List]) -> bool:
+        """Écrit des données en format JSON"""
+        try:
+            # Créer le dossier parent
+            os.makedirs(os.path.dirname(fichier) if os.path.dirname(fichier) else '.', exist_ok=True)
+            
+            with open(fichier, 'w', encoding=self.encoding) as f:
+                json.dump(donnees, f, ensure_ascii=False, indent=self.indent)
+            
+            print(f"✅ JSON écrit: {fichier}")
+            return True
+            
+        except TypeError as e:
+            print(f"❌ Données non sérialisables en JSON: {e}")
+            return False
+        except Exception as e:
+            print(f"❌ Erreur lors de l'écriture JSON: {e}")
+            return False
+    
+    def valider_schema(self, schema: Dict) -> bool:
+        """Validation basique de schéma JSON"""
+        if not self.data:
+            return False
+        
+        # Validation très simple - dans la vraie vie, utilisez jsonschema
+        try:
+            for cle_requise in schema.get('required', []):
+                if cle_requise not in self.data:
+                    print(f"❌ Clé manquante: {cle_requise}")
+                    return False
+            
+            for cle, type_attendu in schema.get('properties', {}).items():
+                if cle in self.data:
+                    if type_attendu == 'string' and not isinstance(self.data[cle], str):
+                        print(f"❌ {cle} doit être une chaîne")
+                        return False
+                    elif type_attendu == 'number' and not isinstance(self.data[cle], (int, float)):
+                        print(f"❌ {cle} doit être un nombre")
+                        return False
+            
+            print("✅ Schéma valide")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Erreur de validation: {e}")
+            return False
+
+# data_manager/utils.py
+import re
+from typing import List, Dict, Any, Union
+
+def nettoyer_donnees(donnees: List[Dict]) -> List[Dict]:
+    """Nettoie les données (espaces, casse, etc.)"""
+    donnees_propres = []
+    
+    for ligne in donnees:
+        ligne_propre = {}
+        for cle, valeur in ligne.items():
+            # Nettoyer la clé
+            cle_propre = cle.strip().lower().replace(' ', '_')
+            
+            # Nettoyer la valeur
+            if isinstance(valeur, str):
+                valeur_propre = valeur.strip()
+                # Convertir en nombre si possible
+                try:
+                    if '.' in valeur_propre:
+                        valeur_propre = float(valeur_propre)
+                    else:
+                        valeur_propre = int(valeur_propre)
+                except ValueError:
+                    pass  # Garder comme chaîne
+            else:
+                valeur_propre = valeur
+            
+            ligne_propre[cle_propre] = valeur_propre
+        
+        donnees_propres.append(ligne_propre)
+    
+    return donnees_propres
+
+def statistiques_simples(donnees: List[Dict], colonne: str) -> Dict[str, Any]:
+    """Calcule des statistiques simples sur une colonne"""
+    valeurs = []
+    for ligne in donnees:
+        val = ligne.get(colonne)
+        if isinstance(val, (int, float)):
+            valeurs.append(val)
+    
+    if not valeurs:
+        return {'erreur': 'Aucune valeur numérique trouvée'}
+    
+    return {
+        'count': len(valeurs),
+        'min': min(valeurs),
+        'max': max(valeurs),
+        'moyenne': sum(valeurs) / len(valeurs),
+        'somme': sum(valeurs)
+    }
+
+def valider_email(email: str) -> bool:
+    """Valide un format d'email simple"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
+
+# Exemple d'utilisation du package complet
+if __name__ == "__main__":
+    # Import du package
+    from data_manager import CSVManager, JSONManager, nettoyer_donnees, statistiques_simples
+    
+    print("=== Test du package data_manager ===")
+    
+    # Test CSV
+    csv_manager = CSVManager()
+    
+    # Créer des données de test
+    donnees_test = [
+        {'nom': 'Alice', 'age': '25', 'email': 'alice@test.com'},
+        {'nom': 'Bob', 'age': '30', 'email': 'bob@test.com'},
+        {'nom': ' Charlie ', 'age': '35 ', 'email': 'charlie@test.com'}
+    ]
+    
+    # Écrire et lire CSV
+    if csv_manager.ecrire_csv('test_data.csv', donnees_test):
+        donnees_lues = csv_manager.lire_csv('test_data.csv')
+        print(f"Données lues: {donnees_lues}")
+        
+        # Nettoyer les données
+        donnees_propres = nettoyer_donnees(donnees_lues)
+        print(f"Données nettoyées: {donnees_propres}")
+        
+        # Statistiques
+        stats = statistiques_simples(donnees_propres, 'age')
+        print(f"Statistiques âge: {stats}")
+    
+    # Test JSON
+    json_manager = JSONManager()
+    
+    config_test = {
+        'application': 'Test App',
+        'version': '1.0.0',
+        'debug': True,
+        'users': donnees_test
+    }
+    
+    if json_manager.ecrire_json('config.json', config_test):
+        config_lu = json_manager.lire_json('config.json')
+        print(f"Config lue: {config_lu}")''',
+                    'exercice': '''## 🎯 Exercice : Package de gestion de blog
+
+**Objectif :** Créer un package complet pour gérer un blog avec modules séparés
+
+### Structure du package à créer :
+
+```
+blog_manager/
+    __init__.py          # Point d'entrée du package
+    models.py            # Classes Article, Utilisateur, Commentaire
+    storage.py           # Sauvegarde/chargement (JSON, CSV)
+    validator.py         # Validation des données
+    formatter.py         # Formatage du contenu (Markdown, HTML)
+    statistics.py        # Statistiques du blog
+    utils.py             # Utilitaires généraux
+```
+
+### Partie 1 : Modèles de données (models.py)
+
+```python
+from datetime import datetime
+from typing import List, Optional
+
+class Utilisateur:
+    def __init__(self, nom: str, email: str, role: str = "lecteur"):
+        # À implémenter
+        pass
+    
+    def __str__(self):
+        # À implémenter
+        pass
+
+class Article:
+    def __init__(self, titre: str, contenu: str, auteur: Utilisateur):
+        # À implémenter avec:
+        # - id unique
+        # - date de création
+        # - date de modification
+        # - tags
+        # - statut (brouillon/publié)
+        pass
+    
+    def publier(self):
+        # Changer le statut à "publié"
+        pass
+    
+    def ajouter_tag(self, tag: str):
+        # Ajouter un tag
+        pass
+
+class Commentaire:
+    def __init__(self, contenu: str, auteur: Utilisateur, article: Article):
+        # À implémenter
+        pass
+
+class Blog:
+    def __init__(self, nom: str):
+        self.nom = nom
+        self.articles = []
+        self.utilisateurs = []
+        self.commentaires = []
+    
+    def ajouter_article(self, article: Article):
+        # À implémenter
+        pass
+    
+    def rechercher_articles(self, terme: str) -> List[Article]:
+        # Recherche par titre, contenu ou tags
+        pass
+    
+    def articles_par_auteur(self, auteur: Utilisateur) -> List[Article]:
+        # À implémenter
+        pass
+```
+
+### Partie 2 : Stockage de données (storage.py)
+
+```python
+import json
+import csv
+from typing import Dict, List
+from .models import Blog, Article, Utilisateur
+
+class BlogStorage:
+    """Gestionnaire de sauvegarde/chargement du blog"""
+    
+    def __init__(self, fichier_base: str = "blog_data"):
+        self.fichier_base = fichier_base
+    
+    def sauvegarder_json(self, blog: Blog) -> bool:
+        """Sauvegarde le blog en format JSON"""
+        # À implémenter - convertir les objets en dictionnaires
+        pass
+    
+    def charger_json(self, fichier: str) -> Optional[Blog]:
+        """Charge un blog depuis un fichier JSON"""
+        # À implémenter - recréer les objets depuis les dictionnaires
+        pass
+    
+    def exporter_csv(self, blog: Blog, fichier: str) -> bool:
+        """Exporte les articles en CSV"""
+        # À implémenter
+        pass
+    
+    def sauvegarder_backup(self, blog: Blog) -> str:
+        """Crée une sauvegarde horodatée"""
+        # À implémenter avec timestamp dans le nom de fichier
+        pass
+```
+
+### Partie 3 : Validation (validator.py)
+
+```python
+import re
+from typing import List, Tuple
+
+class BlogValidator:
+    """Validateur pour les données du blog"""
+    
+    @staticmethod
+    def valider_email(email: str) -> Tuple[bool, str]:
+        """Valide un format d'email"""
+        # À implémenter avec regex
+        pass
+    
+    @staticmethod
+    def valider_article(titre: str, contenu: str) -> List[str]:
+        """Valide un article et retourne la liste des erreurs"""
+        erreurs = []
+        # À implémenter:
+        # - titre non vide, max 200 caractères
+        # - contenu min 10 caractères
+        # - pas de caractères interdits
+        return erreurs
+    
+    @staticmethod
+    def nettoyer_contenu(contenu: str) -> str:
+        """Nettoie le contenu (HTML, espaces, etc.)"""
+        # À implémenter
+        pass
+    
+    @staticmethod
+    def detecter_spam(contenu: str) -> bool:
+        """Détection simple de spam"""
+        # À implémenter avec mots-clés suspects
+        pass
+```
+
+### Partie 4 : Formatage (formatter.py)
+
+```python
+import re
+from datetime import datetime
+
+class ContentFormatter:
+    """Formatage du contenu pour différents formats"""
+    
+    @staticmethod
+    def markdown_to_html(markdown: str) -> str:
+        """Conversion Markdown basique vers HTML"""
+        # À implémenter:
+        # **gras** -> <strong>gras</strong>
+        # *italique* -> <em>italique</em>
+        # # Titre -> <h1>Titre</h1>
+        # [lien](url) -> <a href="url">lien</a>
+        pass
+    
+    @staticmethod
+    def extraire_resume(contenu: str, nb_mots: int = 50) -> str:
+        """Extrait un résumé du contenu"""
+        # À implémenter
+        pass
+    
+    @staticmethod
+    def formatter_date(date: datetime, format_fr: bool = True) -> str:
+        """Formate une date en français ou anglais"""
+        # À implémenter
+        pass
+    
+    @staticmethod
+    def generer_slug(titre: str) -> str:
+        """Génère un slug URL-friendly depuis un titre"""
+        # À implémenter: "Mon Titre !" -> "mon-titre"
+        pass
+```
+
+### Partie 5 : Statistiques (statistics.py)
+
+```python
+from collections import Counter
+from datetime import datetime, timedelta
+from .models import Blog
+
+class BlogStatistics:
+    """Calculateur de statistiques pour le blog"""
+    
+    def __init__(self, blog: Blog):
+        self.blog = blog
+    
+    def stats_generales(self) -> dict:
+        """Statistiques générales du blog"""
+        # À implémenter:
+        # - nombre d'articles total
+        # - nombre d'articles publiés
+        # - nombre d'auteurs
+        # - nombre de commentaires
+        pass
+    
+    def articles_par_mois(self) -> dict:
+        """Nombre d'articles publiés par mois"""
+        # À implémenter
+        pass
+    
+    def tags_populaires(self, limite: int = 10) -> list:
+        """Tags les plus utilisés"""
+        # À implémenter avec Counter
+        pass
+    
+    def auteurs_prolific(self) -> list:
+        """Auteurs les plus productifs"""
+        # À implémenter
+        pass
+    
+    def articles_recents(self, nb_jours: int = 7) -> list:
+        """Articles publiés dans les X derniers jours"""
+        # À implémenter
+        pass
+```
+
+### Partie 6 : Point d'entrée (__init__.py)
+
+```python
+"""
+Package de gestion de blog
+Permet de créer, gérer et analyser un blog simple
+"""
+
+from .models import Blog, Article, Utilisateur, Commentaire
+from .storage import BlogStorage
+from .validator import BlogValidator
+from .formatter import ContentFormatter
+from .statistics import BlogStatistics
+
+__version__ = "1.0.0"
+__author__ = "Votre Nom"
+
+# Fonctions de convenance
+def creer_blog(nom: str) -> Blog:
+    """Crée un nouveau blog"""
+    return Blog(nom)
+
+def charger_blog(fichier: str) -> Blog:
+    """Charge un blog depuis un fichier"""
+    storage = BlogStorage()
+    return storage.charger_json(fichier)
+
+# Export des classes principales
+__all__ = [
+    'Blog', 'Article', 'Utilisateur', 'Commentaire',
+    'BlogStorage', 'BlogValidator', 'ContentFormatter', 'BlogStatistics',
+    'creer_blog', 'charger_blog'
+]
+```
+
+### Exemple d'utilisation :
+
+```python
+from blog_manager import Blog, Article, Utilisateur, BlogStorage, BlogStatistics
+from blog_manager.formatter import ContentFormatter
+
+# Créer un blog
+mon_blog = Blog("Mon Super Blog")
+
+# Créer des utilisateurs
+alice = Utilisateur("Alice", "alice@example.com", "auteur")
+bob = Utilisateur("Bob", "bob@example.com", "lecteur")
+
+# Créer des articles
+article1 = Article("# Mon premier article", "Contenu **important**", alice)
+article1.ajouter_tag("python")
+article1.ajouter_tag("tutorial")
+article1.publier()
+
+mon_blog.ajouter_article(article1)
+
+# Sauvegarder
+storage = BlogStorage()
+storage.sauvegarder_json(mon_blog)
+
+# Statistiques
+stats = BlogStatistics(mon_blog)
+print(stats.stats_generales())
+
+# Formatage
+html = ContentFormatter.markdown_to_html(article1.contenu)
+print(html)
+```
+
+### Tests à implémenter :
+
+1. **Test des modèles** : Création, modification, relations
+2. **Test de sauvegarde** : JSON, CSV, backup
+3. **Test de validation** : Email, contenu, spam
+4. **Test de formatage** : Markdown, slugs, dates
+5. **Test des statistiques** : Comptages, classements
+
+**Fonctionnalités bonus :**
+- Import depuis d'autres formats (WordPress, etc.)
+- Génération de site statique HTML
+- API REST pour le blog
+- Système de plugins
+- Cache intelligent
+- Recherche full-text
+
+Ce package devra être modulaire, bien documenté et facilement extensible !'''
+                }
+            )
+
+        # Cours 4: Python Expert (renommé et réordonné)  
         cours_expert, created = Cours.objects.get_or_create(
             slug='python-expert',
             defaults={
