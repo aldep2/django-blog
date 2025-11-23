@@ -41,6 +41,16 @@ class AutoInitializeMiddleware:
             # Appliquer les migrations
             os.system("python manage.py migrate --noinput")
             
+            # Créer un superutilisateur automatiquement
+            from django.contrib.auth.models import User
+            if not User.objects.filter(is_superuser=True).exists():
+                User.objects.create_superuser(
+                    username='admin',
+                    email='admin@example.com',
+                    password='admin123'
+                )
+                logger.info("Superutilisateur créé : admin/admin123")
+            
             # Peupler automatiquement (forcer pour Railway)
             os.system("python manage.py populate_blog")
             logger.info("Données d'exemple ajoutées")

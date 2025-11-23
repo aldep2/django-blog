@@ -142,13 +142,33 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary btn-sm" onclick="navigator.share({title: '{{ article.titre }}', url: window.location.href})">
+                        <button class="btn btn-outline-primary btn-sm" onclick="partagerArticle()">
                             <i class="fas fa-share"></i> Partager cet article
                         </button>
                         <button class="btn btn-outline-success btn-sm" onclick="window.print()">
                             <i class="fas fa-print"></i> Imprimer
                         </button>
                     </div>
+                    
+                    <script>
+                    function partagerArticle() {
+                        if (navigator.share) {
+                            navigator.share({
+                                title: '{{ article.titre }}',
+                                text: '{{ article.extrait }}',
+                                url: window.location.href
+                            }).catch(console.error);
+                        } else {
+                            // Fallback pour navigateurs qui ne supportent pas Web Share API
+                            navigator.clipboard.writeText(window.location.href).then(() => {
+                                alert('Lien copié dans le presse-papier !');
+                            }).catch(() => {
+                                // Fallback ultime
+                                prompt('Copiez ce lien :', window.location.href);
+                            });
+                        }
+                    }
+                    </script>
                 </div>
             </div>
         </div>
