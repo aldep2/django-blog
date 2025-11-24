@@ -8278,6 +8278,1182 @@ def creer_donnees_test():
 **Challenge :** Le système doit gérer une vraie bibliothèque avec des milliers de livres et centaines de membres ! 📚'''
                 }
             )
+            
+            # Chapitre 6: APIs et HTTP - Partie 2B1
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='apis-http-partie2b1',
+                defaults={
+                    'titre': 'APIs et HTTP - Partie 2B1',
+                    'ordre': 8,
+                    'contenu': '''# APIs et HTTP en Python - Partie 2B1
+
+## 🌐 Introduction aux APIs
+
+### Qu'est-ce qu'une API ?
+Une **API (Application Programming Interface)** permet à différentes applications de communiquer entre elles.
+
+**Types d'APIs :**
+- **REST** : Style architectural simple et populaire
+- **GraphQL** : Query language flexible
+- **SOAP** : Protocol plus ancien et complexe
+
+### API REST - Les bases
+REST utilise les méthodes HTTP standard :
+- **GET** : Récupérer des données
+- **POST** : Créer des données
+- **PUT** : Modifier des données (remplacement complet)
+- **PATCH** : Modifier des données (partiel)
+- **DELETE** : Supprimer des données
+
+## 📡 Module `requests` - Le client HTTP
+
+### Installation et import
+```bash
+pip install requests
+```
+
+```python
+import requests
+import json
+from datetime import datetime
+import time
+```
+
+### Première requête GET
+```python
+import requests
+
+# Requête simple
+response = requests.get('https://jsonplaceholder.typicode.com/posts/1')
+
+# Vérifier le statut
+print(f"Status: {response.status_code}")  # 200 = OK
+
+# Récupérer les données JSON
+data = response.json()
+print(f"Titre: {data['title']}")
+print(f"Contenu: {data['body'][:100]}...")
+```
+
+### Gestion des erreurs HTTP
+```python
+def faire_requete_securisee(url):
+    """Fait une requête avec gestion d'erreurs"""
+    try:
+        response = requests.get(url, timeout=10)
+        
+        # Lève une exception pour codes 4xx/5xx
+        response.raise_for_status()
+        
+        return response.json()
+        
+    except requests.exceptions.ConnectionError:
+        print("❌ Erreur de connexion")
+        return None
+    except requests.exceptions.Timeout:
+        print("❌ Timeout de la requête")
+        return None
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Erreur HTTP: {e}")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Erreur générale: {e}")
+        return None
+
+# Exemple d'utilisation
+data = faire_requete_securisee('https://jsonplaceholder.typicode.com/users')
+if data:
+    print(f"Récupéré {len(data)} utilisateurs")
+```
+
+### Paramètres de requête
+```python
+# Paramètres dans l'URL
+params = {
+    'userId': 1,
+    'completed': False
+}
+
+response = requests.get(
+    'https://jsonplaceholder.typicode.com/todos',
+    params=params
+)
+
+print(f"URL finale: {response.url}")
+# https://jsonplaceholder.typicode.com/todos?userId=1&completed=false
+
+todos = response.json()
+print(f"Tâches trouvées: {len(todos)}")
+```
+
+### Headers personnalisés
+```python
+headers = {
+    'User-Agent': 'MonApp/1.0',
+    'Accept': 'application/json',
+    'Authorization': 'Bearer mon-token-secret'
+}
+
+response = requests.get(
+    'https://api.exemple.com/data',
+    headers=headers
+)
+```
+
+## 🔄 Méthodes HTTP avancées
+
+### POST - Créer des données
+```python
+# Créer un nouveau post
+nouveau_post = {
+    'title': 'Mon super article',
+    'body': 'Contenu de l\'article...',
+    'userId': 1
+}
+
+response = requests.post(
+    'https://jsonplaceholder.typicode.com/posts',
+    json=nouveau_post  # Convertit automatiquement en JSON
+)
+
+if response.status_code == 201:  # Created
+    post_cree = response.json()
+    print(f"✅ Post créé avec ID: {post_cree['id']}")
+else:
+    print(f"❌ Échec: {response.status_code}")
+```
+
+### PUT/PATCH - Modifier des données
+```python
+# PUT - Remplacement complet
+post_modifie = {
+    'id': 1,
+    'title': 'Titre modifié',
+    'body': 'Nouveau contenu',
+    'userId': 1
+}
+
+response = requests.put(
+    'https://jsonplaceholder.typicode.com/posts/1',
+    json=post_modifie
+)
+
+# PATCH - Modification partielle
+modification_partielle = {
+    'title': 'Juste le titre changé'
+}
+
+response = requests.patch(
+    'https://jsonplaceholder.typicode.com/posts/1',
+    json=modification_partielle
+)
+```
+
+### DELETE - Supprimer des données
+```python
+response = requests.delete('https://jsonplaceholder.typicode.com/posts/1')
+
+if response.status_code == 200:
+    print("✅ Post supprimé")
+else:
+    print(f"❌ Erreur: {response.status_code}")
+```
+
+## 🛠️ Client API robuste
+
+### Classe APIClient
+```python
+import requests
+import json
+import time
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+
+class APIClient:
+    """Client API robuste et réutilisable"""
+    
+    def __init__(self, base_url: str, api_key: str = None, timeout: int = 30):
+        self.base_url = base_url.rstrip('/')
+        self.api_key = api_key
+        self.timeout = timeout
+        self.session = requests.Session()
+        
+        # Headers par défaut
+        self.session.headers.update({
+            'User-Agent': 'PythonAPIClient/1.0',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        })
+        
+        if api_key:
+            self.session.headers['Authorization'] = f'Bearer {api_key}'
+    
+    def _make_request(self, method: str, endpoint: str, **kwargs) -> Optional[Dict]:
+        """Fait une requête HTTP avec gestion d'erreurs"""
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        
+        try:
+            response = self.session.request(
+                method=method,
+                url=url,
+                timeout=self.timeout,
+                **kwargs
+            )
+            
+            # Logger la requête
+            print(f"🔗 {method} {url} → {response.status_code}")
+            
+            response.raise_for_status()
+            
+            # Essayer de parser JSON
+            try:
+                return response.json()
+            except ValueError:
+                return {'success': True, 'content': response.text}
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Erreur API: {e}")
+            return None
+    
+    def get(self, endpoint: str, params: Dict = None) -> Optional[Dict]:
+        """GET request"""
+        return self._make_request('GET', endpoint, params=params)
+    
+    def post(self, endpoint: str, data: Dict = None) -> Optional[Dict]:
+        """POST request"""
+        return self._make_request('POST', endpoint, json=data)
+    
+    def put(self, endpoint: str, data: Dict = None) -> Optional[Dict]:
+        """PUT request"""
+        return self._make_request('PUT', endpoint, json=data)
+    
+    def patch(self, endpoint: str, data: Dict = None) -> Optional[Dict]:
+        """PATCH request"""
+        return self._make_request('PATCH', endpoint, json=data)
+    
+    def delete(self, endpoint: str) -> Optional[Dict]:
+        """DELETE request"""
+        return self._make_request('DELETE', endpoint)
+
+# Exemple d'utilisation
+client = APIClient('https://jsonplaceholder.typicode.com')
+
+# Récupérer tous les posts
+posts = client.get('/posts')
+if posts:
+    print(f"📄 {len(posts)} posts récupérés")
+
+# Créer un nouveau post
+nouveau_post = client.post('/posts', {
+    'title': 'Test API',
+    'body': 'Contenu du test',
+    'userId': 1
+})
+
+if nouveau_post:
+    print(f"✅ Post créé: {nouveau_post['id']}")
+```
+
+## 📊 API avec cache local
+
+### Client avec cache SQLite
+```python
+import sqlite3
+import hashlib
+import json
+from datetime import datetime, timedelta
+
+class CachedAPIClient(APIClient):
+    """Client API avec cache SQLite pour optimiser les performances"""
+    
+    def __init__(self, base_url: str, api_key: str = None, cache_db: str = "api_cache.db"):
+        super().__init__(base_url, api_key)
+        self.cache_db = cache_db
+        self._init_cache()
+    
+    def _init_cache(self):
+        """Initialise la base de cache"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS api_cache (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url_hash TEXT UNIQUE NOT NULL,
+                    url TEXT NOT NULL,
+                    response_data TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP NOT NULL
+                )
+            """)
+            conn.commit()
+    
+    def _get_cache_key(self, url: str, params: Dict = None) -> str:
+        """Génère une clé de cache unique"""
+        cache_string = f"{url}:{json.dumps(params or {}, sort_keys=True)}"
+        return hashlib.md5(cache_string.encode()).hexdigest()
+    
+    def _get_from_cache(self, cache_key: str) -> Optional[Dict]:
+        """Récupère depuis le cache si valide"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT response_data, expires_at
+                FROM api_cache 
+                WHERE url_hash = ? AND expires_at > datetime('now')
+            """, (cache_key,))
+            
+            result = cursor.fetchone()
+            if result:
+                print("💾 Données depuis le cache")
+                return json.loads(result[0])
+        return None
+    
+    def _save_to_cache(self, cache_key: str, url: str, data: Dict, ttl_minutes: int = 60):
+        """Sauvegarde dans le cache"""
+        expires_at = datetime.now() + timedelta(minutes=ttl_minutes)
+        
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO api_cache (url_hash, url, response_data, expires_at)
+                VALUES (?, ?, ?, ?)
+            """, (cache_key, url, json.dumps(data), expires_at))
+            conn.commit()
+    
+    def get(self, endpoint: str, params: Dict = None, use_cache: bool = True, ttl_minutes: int = 60) -> Optional[Dict]:
+        """GET avec cache"""
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        cache_key = self._get_cache_key(url, params)
+        
+        # Essayer le cache d'abord
+        if use_cache:
+            cached_data = self._get_from_cache(cache_key)
+            if cached_data:
+                return cached_data
+        
+        # Sinon, requête normale
+        data = super().get(endpoint, params)
+        
+        # Sauvegarder en cache si succès
+        if data and use_cache:
+            self._save_to_cache(cache_key, url, data, ttl_minutes)
+        
+        return data
+    
+    def clear_cache(self):
+        """Vide le cache"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM api_cache")
+            conn.commit()
+        print("🧹 Cache vidé")
+    
+    def cache_stats(self) -> Dict:
+        """Statistiques du cache"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT COUNT(*) FROM api_cache")
+            total = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM api_cache WHERE expires_at > datetime('now')")
+            valid = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM api_cache WHERE expires_at <= datetime('now')")
+            expired = cursor.fetchone()[0]
+            
+            return {
+                'total_entries': total,
+                'valid_entries': valid,
+                'expired_entries': expired
+            }
+
+# Démonstration
+cached_client = CachedAPIClient('https://jsonplaceholder.typicode.com')
+
+print("=== Premier appel (depuis l'API) ===")
+posts = cached_client.get('/posts')
+
+print("\\n=== Deuxième appel (depuis le cache) ===")
+posts_cached = cached_client.get('/posts')
+
+print("\\n=== Statistiques du cache ===")
+stats = cached_client.cache_stats()
+print(f"Entrées totales: {stats['total_entries']}")
+print(f"Entrées valides: {stats['valid_entries']}")
+```
+
+## 🎯 APIs réelles - Exemples pratiques
+
+### API météo avec OpenWeatherMap
+```python
+class WeatherAPI:
+    """Client pour l'API OpenWeatherMap"""
+    
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api.openweathermap.org/data/2.5"
+    
+    def get_weather(self, city: str, country: str = None) -> Optional[Dict]:
+        """Récupère la météo actuelle"""
+        location = f"{city},{country}" if country else city
+        
+        params = {
+            'q': location,
+            'appid': self.api_key,
+            'units': 'metric',  # Celsius
+            'lang': 'fr'
+        }
+        
+        response = requests.get(f"{self.base_url}/weather", params=params)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"❌ Erreur météo: {response.status_code}")
+            return None
+    
+    def format_weather(self, weather_data: Dict) -> str:
+        """Formate les données météo"""
+        if not weather_data:
+            return "Données météo indisponibles"
+        
+        city = weather_data['name']
+        country = weather_data['sys']['country']
+        temp = weather_data['main']['temp']
+        description = weather_data['weather'][0]['description']
+        humidity = weather_data['main']['humidity']
+        
+        return f"""
+🌤️  Météo à {city}, {country}
+🌡️  Température: {temp}°C
+☁️  Conditions: {description}
+💧  Humidité: {humidity}%
+        """.strip()
+
+# Exemple (nécessite une clé API gratuite)
+# weather = WeatherAPI("votre_cle_api")
+# data = weather.get_weather("Paris", "FR")
+# print(weather.format_weather(data))
+```
+
+### API de citations
+```python
+def get_random_quote():
+    """Récupère une citation aléatoire"""
+    try:
+        response = requests.get('https://api.quotable.io/random')
+        if response.status_code == 200:
+            quote_data = response.json()
+            return f'"{quote_data["content"]}" - {quote_data["author"]}'
+        return "Citation indisponible"
+    except:
+        return "Erreur de connexion"
+
+# Test
+print("💭 Citation du jour:")
+print(get_random_quote())
+```
+
+Cette **Partie 2B1** couvre les bases des APIs. La **Partie 2B2** abordera l'authentification, les webhooks et les intégrations avancées ! 🚀''',
+                    'code_exemple': '''# Exemple complet : Client API pour gestion de tâches
+
+import requests
+import sqlite3
+import json
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass, asdict
+from enum import Enum
+
+class Priority(Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+class Status(Enum):
+    TODO = "todo"
+    IN_PROGRESS = "in_progress"
+    DONE = "done"
+
+@dataclass
+class Task:
+    title: str
+    description: str = ""
+    priority: Priority = Priority.MEDIUM
+    status: Status = Status.TODO
+    due_date: str = None
+    id: Optional[int] = None
+    created_at: str = None
+    updated_at: str = None
+
+class TaskAPI:
+    """Client API pour gestion de tâches avec cache local"""
+    
+    def __init__(self, base_url: str = "https://jsonplaceholder.typicode.com"):
+        self.base_url = base_url
+        self.cache_db = "tasks_cache.db"
+        self.session = requests.Session()
+        self.session.headers.update({
+            'Content-Type': 'application/json',
+            'User-Agent': 'TaskManager/1.0'
+        })
+        self._init_cache()
+    
+    def _init_cache(self):
+        """Initialise la base de données locale"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            
+            # Table des tâches locales
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    priority TEXT DEFAULT 'medium',
+                    status TEXT DEFAULT 'todo',
+                    due_date DATE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    synced BOOLEAN DEFAULT 0,
+                    remote_id INTEGER
+                )
+            """)
+            
+            # Table du cache API
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS api_cache (
+                    endpoint TEXT PRIMARY KEY,
+                    data TEXT NOT NULL,
+                    expires_at TIMESTAMP NOT NULL
+                )
+            """)
+            
+            # Table des logs de sync
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS sync_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    task_id INTEGER,
+                    remote_id INTEGER,
+                    success BOOLEAN,
+                    error_message TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            conn.commit()
+    
+    def _log_sync(self, action: str, task_id: int = None, remote_id: int = None, 
+                  success: bool = True, error: str = None):
+        """Log des opérations de synchronisation"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO sync_log (action, task_id, remote_id, success, error_message)
+                VALUES (?, ?, ?, ?, ?)
+            """, (action, task_id, remote_id, success, error))
+            conn.commit()
+    
+    def create_task_local(self, task: Task) -> int:
+        """Crée une tâche en local"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO tasks (title, description, priority, status, due_date)
+                VALUES (?, ?, ?, ?, ?)
+            """, (task.title, task.description, task.priority.value, 
+                  task.status.value, task.due_date))
+            
+            task_id = cursor.lastrowid
+            conn.commit()
+            
+            print(f"✅ Tâche locale créée: {task.title} (ID: {task_id})")
+            return task_id
+    
+    def get_tasks_local(self, status: Status = None) -> List[Dict]:
+        """Récupère les tâches locales"""
+        with sqlite3.connect(self.cache_db) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            if status:
+                cursor.execute("SELECT * FROM tasks WHERE status = ? ORDER BY created_at DESC", (status.value,))
+            else:
+                cursor.execute("SELECT * FROM tasks ORDER BY created_at DESC")
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def update_task_local(self, task_id: int, **updates) -> bool:
+        """Met à jour une tâche locale"""
+        if not updates:
+            return False
+        
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            
+            # Construire la requête dynamiquement
+            set_clause = ', '.join([f"{key} = ?" for key in updates.keys()])
+            values = list(updates.values()) + [datetime.now(), task_id]
+            
+            cursor.execute(f"""
+                UPDATE tasks 
+                SET {set_clause}, updated_at = ?, synced = 0
+                WHERE id = ?
+            """, values)
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                print(f"✅ Tâche {task_id} mise à jour")
+                return True
+            else:
+                print(f"❌ Tâche {task_id} non trouvée")
+                return False
+    
+    def delete_task_local(self, task_id: int) -> bool:
+        """Supprime une tâche locale"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                print(f"✅ Tâche {task_id} supprimée")
+                return True
+            else:
+                print(f"❌ Tâche {task_id} non trouvée")
+                return False
+    
+    def fetch_remote_tasks(self) -> List[Dict]:
+        """Récupère les tâches depuis l'API distante"""
+        try:
+            # Utiliser JSONPlaceholder comme exemple
+            response = self.session.get(f"{self.base_url}/todos")
+            response.raise_for_status()
+            
+            todos = response.json()
+            
+            # Convertir au format Task
+            tasks = []
+            for todo in todos[:10]:  # Limiter à 10 pour l'exemple
+                task = {
+                    'remote_id': todo['id'],
+                    'title': todo['title'],
+                    'description': f"Tâche importée de l'API (User {todo['userId']})",
+                    'priority': 'medium',
+                    'status': 'done' if todo['completed'] else 'todo',
+                    'synced': True
+                }
+                tasks.append(task)
+            
+            print(f"🔄 {len(tasks)} tâches récupérées de l'API")
+            self._log_sync("fetch_remote", success=True)
+            return tasks
+            
+        except requests.RequestException as e:
+            print(f"❌ Erreur API: {e}")
+            self._log_sync("fetch_remote", success=False, error=str(e))
+            return []
+    
+    def sync_with_remote(self):
+        """Synchronise avec l'API distante"""
+        print("🔄 Début de la synchronisation...")
+        
+        # Récupérer les tâches distantes
+        remote_tasks = self.fetch_remote_tasks()
+        
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            
+            # Importer les nouvelles tâches
+            imported = 0
+            for task in remote_tasks:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO tasks 
+                    (title, description, priority, status, synced, remote_id)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (task['title'], task['description'], task['priority'], 
+                      task['status'], task['synced'], task['remote_id']))
+                
+                if cursor.rowcount > 0:
+                    imported += 1
+            
+            conn.commit()
+            
+        print(f"✅ Synchronisation terminée: {imported} nouvelles tâches importées")
+    
+    def get_sync_statistics(self) -> Dict:
+        """Statistiques de synchronisation"""
+        with sqlite3.connect(self.cache_db) as conn:
+            cursor = conn.cursor()
+            
+            # Nombre de tâches par statut
+            cursor.execute("""
+                SELECT status, COUNT(*) 
+                FROM tasks 
+                GROUP BY status
+            """)
+            status_counts = dict(cursor.fetchall())
+            
+            # Tâches non synchronisées
+            cursor.execute("SELECT COUNT(*) FROM tasks WHERE synced = 0")
+            unsynced = cursor.fetchone()[0]
+            
+            # Dernière sync réussie
+            cursor.execute("""
+                SELECT timestamp 
+                FROM sync_log 
+                WHERE success = 1 AND action = 'fetch_remote'
+                ORDER BY timestamp DESC 
+                LIMIT 1
+            """)
+            last_sync = cursor.fetchone()
+            
+            return {
+                'status_counts': status_counts,
+                'unsynced_tasks': unsynced,
+                'last_sync': last_sync[0] if last_sync else 'Jamais'
+            }
+    
+    def search_tasks(self, query: str) -> List[Dict]:
+        """Recherche dans les tâches"""
+        with sqlite3.connect(self.cache_db) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            pattern = f"%{query}%"
+            cursor.execute("""
+                SELECT * FROM tasks 
+                WHERE title LIKE ? OR description LIKE ?
+                ORDER BY 
+                    CASE 
+                        WHEN title LIKE ? THEN 1 
+                        ELSE 2 
+                    END,
+                    created_at DESC
+            """, (pattern, pattern, pattern))
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def get_tasks_by_priority(self, priority: Priority) -> List[Dict]:
+        """Filtre les tâches par priorité"""
+        with sqlite3.connect(self.cache_db) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM tasks 
+                WHERE priority = ? 
+                ORDER BY created_at DESC
+            """, (priority.value,))
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def get_overdue_tasks(self) -> List[Dict]:
+        """Tâches en retard"""
+        with sqlite3.connect(self.cache_db) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM tasks 
+                WHERE due_date < date('now') 
+                  AND status != 'done'
+                ORDER BY due_date ASC
+            """)
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def export_tasks(self, format: str = "json") -> str:
+        """Exporte toutes les tâches"""
+        tasks = self.get_tasks_local()
+        
+        if format == "json":
+            filename = f"tasks_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(tasks, f, ensure_ascii=False, indent=2, default=str)
+        
+        elif format == "csv":
+            import csv
+            filename = f"tasks_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            
+            if tasks:
+                with open(filename, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=tasks[0].keys())
+                    writer.writeheader()
+                    writer.writerows(tasks)
+        
+        print(f"✅ Tâches exportées: {filename}")
+        return filename
+
+def demo_task_manager():
+    """Démonstration complète du gestionnaire de tâches"""
+    task_api = TaskAPI()
+    
+    print("=== CRÉATION DE TÂCHES LOCALES ===")
+    
+    # Créer quelques tâches d'exemple
+    tasks_examples = [
+        Task("Finir le projet Python", "Terminer l'application de gestion", Priority.HIGH, Status.IN_PROGRESS, "2024-12-31"),
+        Task("Apprendre les APIs", "Étudier les requêtes HTTP et REST", Priority.MEDIUM, Status.TODO, "2024-12-15"),
+        Task("Faire les courses", "Acheter des légumes et du pain", Priority.LOW, Status.TODO, "2024-11-25"),
+        Task("Réviser Django", "Préparer l'examen", Priority.HIGH, Status.TODO, "2024-12-01")
+    ]
+    
+    task_ids = []
+    for task in tasks_examples:
+        task_id = task_api.create_task_local(task)
+        task_ids.append(task_id)
+    
+    print("\\n=== SYNCHRONISATION AVEC L'API ===")
+    task_api.sync_with_remote()
+    
+    print("\\n=== AFFICHAGE DES TÂCHES ===")
+    all_tasks = task_api.get_tasks_local()
+    print(f"📋 Total: {len(all_tasks)} tâches")
+    
+    for task in all_tasks[:5]:  # Afficher les 5 premières
+        status_emoji = {"todo": "⏳", "in_progress": "🔄", "done": "✅"}
+        priority_emoji = {"low": "🟢", "medium": "🟡", "high": "🔴"}
+        
+        print(f"{status_emoji.get(task['status'], '❓')} {priority_emoji.get(task['priority'], '⚪')} {task['title']}")
+    
+    print("\\n=== RECHERCHE ===")
+    results = task_api.search_tasks("Python")
+    print(f"🔍 Trouvé {len(results)} tâche(s) avec 'Python':")
+    for task in results:
+        print(f"  - {task['title']}")
+    
+    print("\\n=== TÂCHES PRIORITAIRES ===")
+    high_priority = task_api.get_tasks_by_priority(Priority.HIGH)
+    print(f"🔴 {len(high_priority)} tâche(s) haute priorité:")
+    for task in high_priority:
+        print(f"  - {task['title']} (Due: {task['due_date'] or 'Pas de date'})")
+    
+    print("\\n=== MODIFICATION D'UNE TÂCHE ===")
+    if task_ids:
+        task_api.update_task_local(task_ids[0], status='done', description='Projet terminé avec succès!')
+    
+    print("\\n=== STATISTIQUES ===")
+    stats = task_api.get_sync_statistics()
+    print(f"📊 Répartition par statut: {stats['status_counts']}")
+    print(f"📊 Tâches non synchronisées: {stats['unsynced_tasks']}")
+    print(f"📊 Dernière sync: {stats['last_sync']}")
+    
+    print("\\n=== EXPORT ===")
+    task_api.export_tasks("json")
+
+if __name__ == "__main__":
+    demo_task_manager()''',
+                    'exercice': '''## 🎯 Exercice : Client météo avec base locale
+
+**Objectif :** Créer un client météo complet avec cache SQLite et analyse des données
+
+### Partie 1 : Structure de base
+
+Créez un système qui :
+1. **Récupère** les données météo via API
+2. **Stocke** localement pour éviter les appels répétés
+3. **Analyse** les tendances météorologiques
+4. **Exporte** les rapports
+
+#### Classes principales
+```python
+@dataclass
+class WeatherData:
+    city: str
+    country: str
+    temperature: float
+    humidity: int
+    pressure: float
+    description: str
+    wind_speed: float
+    timestamp: datetime
+    id: Optional[int] = None
+
+class WeatherClient:
+    def __init__(self, api_key: str, db_name: str = "weather.db"):
+        self.api_key = api_key
+        self.base_url = "https://api.openweathermap.org/data/2.5"
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        """Crée les tables nécessaires"""
+        # À implémenter
+        pass
+    
+    def get_weather(self, city: str, use_cache: bool = True) -> Optional[WeatherData]:
+        """Récupère la météo avec cache intelligent"""
+        pass
+    
+    def get_forecast(self, city: str, days: int = 5) -> List[WeatherData]:
+        """Prévisions sur plusieurs jours"""
+        pass
+    
+    def analyze_trends(self, city: str, days: int = 30) -> Dict:
+        """Analyse les tendances météo"""
+        pass
+```
+
+### Partie 2 : Cache intelligent
+
+Implémentez un système de cache qui :
+- **Évite les appels** répétés dans l'heure
+- **Stocke l'historique** pour analyse
+- **Gère l'expiration** automatiquement
+
+```python
+def _get_from_cache(self, city: str, max_age_minutes: int = 60) -> Optional[WeatherData]:
+    """Récupère depuis le cache si récent"""
+    # Implémenter la logique de cache
+    pass
+
+def _save_to_cache(self, weather_data: WeatherData):
+    """Sauvegarde dans la base locale"""
+    pass
+
+def _cleanup_old_data(self, days_to_keep: int = 90):
+    """Nettoie les anciennes données"""
+    pass
+```
+
+### Partie 3 : Analyses météorologiques
+
+#### A. Statistiques de base
+```python
+def get_temperature_stats(self, city: str, period_days: int = 30) -> Dict:
+    """Statistiques de température"""
+    # Retourner :
+    # - Température min/max/moyenne
+    # - Écart-type
+    # - Tendance (hausse/baisse)
+    pass
+
+def get_weather_patterns(self, city: str) -> Dict:
+    """Analyse des patterns météo"""
+    # Retourner :
+    # - Conditions les plus fréquentes
+    # - Heures les plus humides
+    # - Variations de pression
+    pass
+```
+
+#### B. Comparaisons entre villes
+```python
+def compare_cities(self, cities: List[str], metric: str = "temperature") -> Dict:
+    """Compare les métriques entre villes"""
+    pass
+
+def find_similar_weather(self, reference_city: str) -> List[str]:
+    """Trouve les villes avec météo similaire"""
+    pass
+```
+
+### Partie 4 : Alertes et notifications
+
+```python
+def setup_weather_alert(self, city: str, condition: str, threshold: float):
+    """Configure une alerte météo"""
+    # Conditions : 'temperature_above', 'humidity_below', etc.
+    pass
+
+def check_alerts(self) -> List[Dict]:
+    """Vérifie toutes les alertes actives"""
+    pass
+
+def send_notification(self, message: str, method: str = "console"):
+    """Envoie une notification"""
+    # Méthodes : 'console', 'email', 'file'
+    pass
+```
+
+### Partie 5 : Export et visualisation
+
+#### A. Rapports détaillés
+```python
+def generate_weather_report(self, city: str, format: str = "text") -> str:
+    """Génère un rapport météo complet"""
+    # Formats : 'text', 'json', 'html'
+    pass
+
+def export_historical_data(self, city: str, format: str = "csv") -> str:
+    """Exporte l'historique météo"""
+    pass
+```
+
+#### B. Graphiques (bonus avec matplotlib)
+```python
+def plot_temperature_trend(self, city: str, days: int = 30):
+    """Graphique d'évolution de température"""
+    pass
+
+def plot_weather_comparison(self, cities: List[str]):
+    """Compare visuellement plusieurs villes"""
+    pass
+```
+
+### Partie 6 : Interface en ligne de commande
+
+Créez un CLI avec ces fonctionnalités :
+
+```bash
+python weather_cli.py current Paris
+python weather_cli.py forecast Paris --days 7
+python weather_cli.py analyze Paris --period 30
+python weather_cli.py compare Paris London Berlin
+python weather_cli.py alert Paris temperature_above 30
+python weather_cli.py report Paris --format html
+python weather_cli.py export Paris --format csv
+```
+
+#### Implémentation CLI
+```python
+import argparse
+from datetime import datetime
+
+def create_cli():
+    """Crée l'interface en ligne de commande"""
+    parser = argparse.ArgumentParser(description='Client météo avancé')
+    subparsers = parser.add_subparsers(dest='command', help='Commandes disponibles')
+    
+    # Commande current
+    current_parser = subparsers.add_parser('current', help='Météo actuelle')
+    current_parser.add_argument('city', help='Nom de la ville')
+    current_parser.add_argument('--no-cache', action='store_true', help='Ignorer le cache')
+    
+    # Commande forecast  
+    forecast_parser = subparsers.add_parser('forecast', help='Prévisions')
+    forecast_parser.add_argument('city', help='Nom de la ville')
+    forecast_parser.add_argument('--days', type=int, default=5, help='Nombre de jours')
+    
+    # À compléter avec les autres commandes...
+    
+    return parser
+
+def main():
+    parser = create_cli()
+    args = parser.parse_args()
+    
+    client = WeatherClient("votre_cle_api")
+    
+    if args.command == 'current':
+        # Implémenter la logique
+        pass
+    elif args.command == 'forecast':
+        # Implémenter la logique
+        pass
+    # Etc...
+
+if __name__ == "__main__":
+    main()
+```
+
+### Partie 7 : Tests unitaires
+
+```python
+import unittest
+from unittest.mock import Mock, patch
+
+class TestWeatherClient(unittest.TestCase):
+    def setUp(self):
+        self.client = WeatherClient("fake_api_key", ":memory:")  # BD en mémoire pour tests
+    
+    def test_cache_functionality(self):
+        """Test du système de cache"""
+        pass
+    
+    @patch('requests.get')
+    def test_api_call(self, mock_get):
+        """Test des appels API avec mock"""
+        pass
+    
+    def test_data_analysis(self):
+        """Test des analyses de données"""
+        pass
+```
+
+### Partie 8 : Configuration avancée
+
+#### Fichier de configuration (config.yaml)
+```yaml
+api:
+  key: "your_api_key_here"
+  base_url: "https://api.openweathermap.org/data/2.5"
+  timeout: 30
+  retry_count: 3
+
+cache:
+  database: "weather_data.db"
+  max_age_minutes: 60
+  cleanup_days: 90
+
+alerts:
+  email_enabled: false
+  email_smtp: "smtp.gmail.com"
+  email_from: "weather@example.com"
+
+export:
+  default_format: "csv"
+  output_directory: "./exports"
+```
+
+### Fonctionnalités bonus
+
+1. **Multi-sources** : Combiner plusieurs APIs météo
+2. **Géolocalisation** : Détection automatique de ville
+3. **Webhooks** : Notifications en temps réel
+4. **Dashboard web** : Interface web avec Flask
+5. **API REST** : Serveur pour partager les données
+6. **Machine Learning** : Prédictions personnalisées
+7. **Intégration IoT** : Capteurs météo locaux
+
+### APIs météo gratuites à tester
+
+1. **OpenWeatherMap** : https://openweathermap.org/api (gratuit jusqu'à 60 calls/minute)
+2. **WeatherAPI** : https://www.weatherapi.com/ (gratuit jusqu'à 1M calls/mois)
+3. **AccuWeather** : https://developer.accuweather.com/ (50 calls/jour gratuit)
+
+### Exemple de données de test
+
+```python
+def create_test_data():
+    """Crée des données de test sans API"""
+    import random
+    from datetime import datetime, timedelta
+    
+    cities = ["Paris", "London", "Berlin", "Madrid", "Rome"]
+    
+    for city in cities:
+        for i in range(30):  # 30 jours de données
+            date = datetime.now() - timedelta(days=i)
+            weather = WeatherData(
+                city=city,
+                country="EU",
+                temperature=random.uniform(-5, 35),
+                humidity=random.randint(30, 90),
+                pressure=random.uniform(990, 1030),
+                description=random.choice(["Clear", "Cloudy", "Rainy", "Sunny"]),
+                wind_speed=random.uniform(0, 20),
+                timestamp=date
+            )
+            # Sauvegarder en base
+```
+
+### Critères de réussite
+
+- ✅ **Gestion API** robuste avec retry et cache
+- ✅ **Base de données** bien structurée et optimisée
+- ✅ **Analyses** pertinentes et statistiques correctes
+- ✅ **Interface CLI** complète et intuitive
+- ✅ **Export** dans multiples formats
+- ✅ **Gestion d'erreurs** et logs détaillés
+- ✅ **Performance** acceptable avec gros volumes
+- ✅ **Tests unitaires** complets
+
+**Challenge :** Gérer 10+ villes avec historique de 6 mois ! 🌤️'''
+                }
+            )
 
         # Cours 4: Python Expert (renommé et réordonné)  
         cours_expert, created = Cours.objects.get_or_create(
