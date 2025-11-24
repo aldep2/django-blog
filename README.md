@@ -4,6 +4,7 @@ Un blog simple et élégant développé avec Django, incluant toutes les fonctio
 
 ## 🚀 Fonctionnalités
 
+### 📝 Blog
 - ✅ **Gestion des articles** : Création, édition et publication d'articles
 - ✅ **Système de catégories** : Organisation par thématiques avec couleurs personnalisées
 - ✅ **Système de commentaires** : Interaction avec les lecteurs
@@ -13,6 +14,15 @@ Un blog simple et élégant développé avec Django, incluant toutes les fonctio
 - ✅ **Pagination automatique** : Navigation facile entre les articles
 - ✅ **Compteur de vues** : Statistiques d'engagement
 - ✅ **Upload d'images** : Images d'en-tête pour les articles
+
+### 🐍 Cours Python Intégrés
+- ✅ **Python Débutant** : Installation, variables, types de données
+- ✅ **Python Intermédiaire** : Listes, dictionnaires, fonctions
+- ✅ **Python Avancé** : POO, exceptions, modules, **APIs avancées**
+- ✅ **Python Expert** : Décorateurs, générateurs, métaclasses
+- ✅ **Chapitres interactifs** : Code d'exemple et exercices pratiques
+- ✅ **Navigation fluide** : Entre chapitres et cours
+- ✅ **Dernière mise à jour** : APIs avancées (OAuth, JWT, webhooks, GraphQL, pagination, rate limiting)
 
 ## 📋 Installation et Configuration
 
@@ -36,7 +46,7 @@ python manage.py migrate
 
 ### 4. Données d'exemple (recommandé)
 ```bash
-# Peupler le blog avec du contenu d'exemple
+# Peupler le blog avec du contenu d'exemple et les cours Python
 python manage.py populate_blog
 ```
 
@@ -48,6 +58,7 @@ python manage.py runserver
 ## 🌐 Accès aux interfaces
 
 - **Blog principal** : http://127.0.0.1:8000/
+- **Cours Python** : http://127.0.0.1:8000/cours/
 - **Administration** : http://127.0.0.1:8000/admin/
   - Identifiant : `admin`
   - Mot de passe : `admin123` (si vous avez utilisé populate_blog)
@@ -78,27 +89,39 @@ django/
 │   │   ├── detail_article.html
 │   │   └── articles_par_categorie.html
 │   └── management/commands/  # Commandes personnalisées
-│       └── populate_blog.py  # Commande de peuplement
+│       ├── populate_blog.py  # Commande de peuplement
+│       └── create_courses.py # Commande de création des cours Python
 ├── static/                    # Fichiers statiques (CSS, JS)
 └── media/                     # Fichiers uploadés
 ```
 
 ## 🎨 Modèles de données
 
-### Article
+### Blog
+#### Article
 - Titre, slug, contenu, extrait
 - Auteur, catégorie, statut (brouillon/publié)
 - Dates de création/modification/publication
 - Compteur de vues, image d'en-tête
 
-### Catégorie
+#### Catégorie
 - Nom, description, couleur personnalisée
 - Organisation thématique des articles
 
-### Commentaire
+#### Commentaire
 - Contenu, auteur, article associé
 - Modération (actif/inactif)
 - Date de création
+
+### Cours Python
+#### Cours
+- Titre, description, niveau (débutant/intermédiaire/avancé/expert)
+- Durée estimée, ordre d'affichage, statut actif
+
+#### Chapitre
+- Titre, contenu, code d'exemple, exercice pratique
+- Ordre dans le cours, navigation séquentielle
+- **Nouveau** : Chapitre "APIs Avancées - Partie 2B2" (OAuth, JWT, webhooks, GraphQL)
 
 ## 🛠️ Utilisation de l'administration
 
@@ -143,11 +166,19 @@ Pour un déploiement en production :
 ## 🔧 Personnalisation
 
 ### Ajouter de nouvelles fonctionnalités
+#### Blog
 - **Tags** : Système de mots-clés pour les articles
 - **Recherche avancée** : Filtres par date, auteur, etc.
 - **Newsletter** : Abonnement aux nouveaux articles
 - **Partage social** : Boutons de partage intégrés
 - **Système de votes** : Like/Dislike sur les articles
+
+#### Cours Python
+- **Nouveau chapitre ajouté** : APIs Avancées - Partie 2B2
+- **Fonctionnalités** : OAuth 2.0, JWT, webhooks, GraphQL, pagination, rate limiting
+- **Quizz interactifs** : Tests de connaissances par chapitre
+- **Progression utilisateur** : Suivi de l'avancement dans les cours
+- **Certificats** : Validation des acquis par niveau
 
 ### Modification du design
 - Modifiez les templates dans `blog/templates/blog/`
