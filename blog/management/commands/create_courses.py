@@ -6860,6 +6860,1424 @@ Martin,Bob,bob.martin@school.com,6èmeA,Français,16.5,Rédaction,2024-01-20
 **Challenge :** Le système doit gérer un collège entier ! 🎓'''
                 }
             )
+            
+            # Chapitre 6: Relations et JOINs SQLite - Partie 2A
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='relations-joins-sqlite-partie2a',
+                defaults={
+                    'titre': 'Relations et JOINs SQLite - Partie 2A',
+                    'ordre': 7,
+                    'contenu': '''# Relations et JOINs SQLite - Partie 2A
+
+## 🔗 Relations entre tables
+
+### Pourquoi utiliser des relations ?
+Au lieu de dupliquer les données, nous créons des **relations** entre les tables pour :
+- ✅ **Éviter la redondance** des données
+- ✅ **Maintenir la cohérence** 
+- ✅ **Optimiser l'espace** de stockage
+- ✅ **Faciliter les mises à jour**
+
+### Types de relations
+
+**1. Un-à-Un (1:1)**
+```
+Utilisateur ↔ Profil
+Un utilisateur a un seul profil
+```
+
+**2. Un-à-Plusieurs (1:N)**
+```
+Client → Commandes
+Un client peut avoir plusieurs commandes
+```
+
+**3. Plusieurs-à-Plusieurs (N:N)**
+```
+Étudiants ↔ Cours
+Un étudiant suit plusieurs cours
+Un cours a plusieurs étudiants
+```
+
+## 🗝️ Clés étrangères (Foreign Keys)
+
+### Syntaxe de base
+```sql
+CREATE TABLE commandes (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER NOT NULL,
+    date_commande DATE,
+    total REAL,
+    FOREIGN KEY (client_id) REFERENCES clients (id)
+);
+```
+
+### Exemple complet avec contraintes
+```python
+import sqlite3
+from datetime import date, datetime
+from dataclasses import dataclass
+from typing import List, Optional
+
+@dataclass
+class Client:
+    nom: str
+    email: str
+    telephone: str = None
+    adresse: str = None
+    id: Optional[int] = None
+
+@dataclass
+class Produit:
+    nom: str
+    prix: float
+    stock: int = 0
+    description: str = None
+    id: Optional[int] = None
+
+@dataclass
+class Commande:
+    client_id: int
+    date_commande: date = None
+    statut: str = "en_cours"
+    id: Optional[int] = None
+    
+    def __post_init__(self):
+        if self.date_commande is None:
+            self.date_commande = date.today()
+
+class BoutiqueBD:
+    """Système de boutique avec relations"""
+    
+    def __init__(self, db_name="boutique.db"):
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        """Crée les tables avec relations"""
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            
+            # Table des clients
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS clients (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nom TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    telephone TEXT,
+                    adresse TEXT,
+                    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Table des produits
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS produits (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nom TEXT NOT NULL,
+                    prix REAL NOT NULL CHECK(prix > 0),
+                    stock INTEGER DEFAULT 0 CHECK(stock >= 0),
+                    description TEXT,
+                    date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Table des commandes
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS commandes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    client_id INTEGER NOT NULL,
+                    date_commande DATE NOT NULL,
+                    statut TEXT DEFAULT 'en_cours',
+                    total REAL DEFAULT 0,
+                    FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
+                )
+            """)
+            
+            # Table de liaison commandes-produits (N:N)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS commande_produits (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    commande_id INTEGER NOT NULL,
+                    produit_id INTEGER NOT NULL,
+                    quantite INTEGER NOT NULL CHECK(quantite > 0),
+                    prix_unitaire REAL NOT NULL,
+                    FOREIGN KEY (commande_id) REFERENCES commandes (id) ON DELETE CASCADE,
+                    FOREIGN KEY (produit_id) REFERENCES produits (id) ON DELETE CASCADE,
+                    UNIQUE(commande_id, produit_id)
+                )
+            """)
+            
+            # Index pour optimiser les requêtes
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_commandes_client ON commandes(client_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_commande_produits_commande ON commande_produits(commande_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_commande_produits_produit ON commande_produits(produit_id)")
+            
+            conn.commit()
+            print("✅ Base de données initialisée avec relations")
+    
+    def ajouter_client(self, client: Client) -> Optional[int]:
+        """Ajoute un nouveau client"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO clients (nom, email, telephone, adresse)
+                    VALUES (?, ?, ?, ?)
+                """, (client.nom, client.email, client.telephone, client.adresse))
+                
+                client_id = cursor.lastrowid
+                conn.commit()
+                print(f"✅ Client {client.nom} ajouté (ID: {client_id})")
+                return client_id
+        except sqlite3.IntegrityError:
+            print(f"❌ Email {client.email} déjà utilisé")
+            return None
+    
+    def ajouter_produit(self, produit: Produit) -> Optional[int]:
+        """Ajoute un nouveau produit"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO produits (nom, prix, stock, description)
+                    VALUES (?, ?, ?, ?)
+                """, (produit.nom, produit.prix, produit.stock, produit.description))
+                
+                produit_id = cursor.lastrowid
+                conn.commit()
+                print(f"✅ Produit {produit.nom} ajouté (ID: {produit_id})")
+                return produit_id
+        except Exception as e:
+            print(f"❌ Erreur ajout produit: {e}")
+            return None
+    
+    def creer_commande(self, client_id: int) -> Optional[int]:
+        """Crée une nouvelle commande pour un client"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                
+                # Vérifier que le client existe
+                cursor.execute("SELECT id FROM clients WHERE id = ?", (client_id,))
+                if not cursor.fetchone():
+                    print(f"❌ Client {client_id} non trouvé")
+                    return None
+                
+                # Créer la commande
+                cursor.execute("""
+                    INSERT INTO commandes (client_id, date_commande)
+                    VALUES (?, ?)
+                """, (client_id, date.today()))
+                
+                commande_id = cursor.lastrowid
+                conn.commit()
+                print(f"✅ Commande {commande_id} créée pour client {client_id}")
+                return commande_id
+        except Exception as e:
+            print(f"❌ Erreur création commande: {e}")
+            return None
+    
+    def ajouter_produit_commande(self, commande_id: int, produit_id: int, quantite: int) -> bool:
+        """Ajoute un produit à une commande"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                
+                # Récupérer le prix du produit et vérifier le stock
+                cursor.execute("SELECT prix, stock FROM produits WHERE id = ?", (produit_id,))
+                result = cursor.fetchone()
+                
+                if not result:
+                    print(f"❌ Produit {produit_id} non trouvé")
+                    return False
+                
+                prix, stock = result
+                if stock < quantite:
+                    print(f"❌ Stock insuffisant (disponible: {stock}, demandé: {quantite})")
+                    return False
+                
+                # Ajouter à la commande
+                cursor.execute("""
+                    INSERT INTO commande_produits (commande_id, produit_id, quantite, prix_unitaire)
+                    VALUES (?, ?, ?, ?)
+                """, (commande_id, produit_id, quantite, prix))
+                
+                # Décrémenter le stock
+                cursor.execute("""
+                    UPDATE produits SET stock = stock - ? WHERE id = ?
+                """, (quantite, produit_id))
+                
+                # Recalculer le total de la commande
+                self._recalculer_total_commande(cursor, commande_id)
+                
+                conn.commit()
+                print(f"✅ {quantite}x produit {produit_id} ajouté à commande {commande_id}")
+                return True
+                
+        except sqlite3.IntegrityError:
+            print("❌ Produit déjà dans cette commande")
+            return False
+        except Exception as e:
+            print(f"❌ Erreur ajout produit: {e}")
+            return False
+    
+    def _recalculer_total_commande(self, cursor, commande_id: int):
+        """Recalcule le total d'une commande"""
+        cursor.execute("""
+            UPDATE commandes 
+            SET total = (
+                SELECT COALESCE(SUM(quantite * prix_unitaire), 0)
+                FROM commande_produits 
+                WHERE commande_id = ?
+            )
+            WHERE id = ?
+        """, (commande_id, commande_id))
+```
+
+## 🔄 Requêtes JOIN
+
+### Types de JOINs
+
+**INNER JOIN** : Seulement les enregistrements qui ont une correspondance dans les deux tables
+```sql
+SELECT clients.nom, commandes.date_commande, commandes.total
+FROM clients
+INNER JOIN commandes ON clients.id = commandes.client_id;
+```
+
+**LEFT JOIN** : Tous les enregistrements de la table de gauche + correspondances
+```sql
+SELECT clients.nom, COUNT(commandes.id) as nb_commandes
+FROM clients
+LEFT JOIN commandes ON clients.id = commandes.client_id
+GROUP BY clients.id;
+```
+
+### Implémentation Python
+```python
+def commandes_client(self, client_id: int) -> List[dict]:
+    """Récupère toutes les commandes d'un client avec détails"""
+    with sqlite3.connect(self.db_name) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                c.id,
+                c.date_commande,
+                c.statut,
+                c.total,
+                cl.nom as nom_client
+            FROM commandes c
+            INNER JOIN clients cl ON c.client_id = cl.id
+            WHERE c.client_id = ?
+            ORDER BY c.date_commande DESC
+        """, (client_id,))
+        
+        return [dict(row) for row in cursor.fetchall()]
+
+def produits_commande(self, commande_id: int) -> List[dict]:
+    """Détaille les produits d'une commande"""
+    with sqlite3.connect(self.db_name) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                p.nom,
+                p.description,
+                cp.quantite,
+                cp.prix_unitaire,
+                (cp.quantite * cp.prix_unitaire) as sous_total
+            FROM commande_produits cp
+            INNER JOIN produits p ON cp.produit_id = p.id
+            WHERE cp.commande_id = ?
+            ORDER BY p.nom
+        """, (commande_id,))
+        
+        return [dict(row) for row in cursor.fetchall()]
+
+def rapport_ventes(self) -> dict:
+    """Rapport global des ventes"""
+    with sqlite3.connect(self.db_name) as conn:
+        cursor = conn.cursor()
+        
+        # Total des ventes
+        cursor.execute("SELECT COALESCE(SUM(total), 0) FROM commandes")
+        total_ventes = cursor.fetchone()[0]
+        
+        # Nombre de commandes
+        cursor.execute("SELECT COUNT(*) FROM commandes")
+        nb_commandes = cursor.fetchone()[0]
+        
+        # Produit le plus vendu
+        cursor.execute("""
+            SELECT 
+                p.nom,
+                SUM(cp.quantite) as total_vendu
+            FROM commande_produits cp
+            INNER JOIN produits p ON cp.produit_id = p.id
+            GROUP BY cp.produit_id
+            ORDER BY total_vendu DESC
+            LIMIT 1
+        """)
+        produit_top = cursor.fetchone()
+        
+        # Client le plus actif
+        cursor.execute("""
+            SELECT 
+                cl.nom,
+                COUNT(c.id) as nb_commandes,
+                COALESCE(SUM(c.total), 0) as total_achats
+            FROM clients cl
+            LEFT JOIN commandes c ON cl.id = c.client_id
+            GROUP BY cl.id
+            ORDER BY total_achats DESC
+            LIMIT 1
+        """)
+        client_top = cursor.fetchone()
+        
+        return {
+            'total_ventes': total_ventes,
+            'nombre_commandes': nb_commandes,
+            'panier_moyen': round(total_ventes / nb_commandes, 2) if nb_commandes > 0 else 0,
+            'produit_top': produit_top,
+            'client_top': client_top
+        }
+
+def clients_sans_commande(self) -> List[dict]:
+    """Trouve les clients qui n'ont jamais commandé"""
+    with sqlite3.connect(self.db_name) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT cl.id, cl.nom, cl.email
+            FROM clients cl
+            LEFT JOIN commandes c ON cl.id = c.client_id
+            WHERE c.id IS NULL
+            ORDER BY cl.nom
+        """)
+        
+        return [dict(row) for row in cursor.fetchall()]
+```
+
+## 📊 Agrégations avancées
+
+### GROUP BY et fonctions d'agrégation
+```python
+def statistiques_par_client(self) -> List[dict]:
+    """Statistiques détaillées par client"""
+    with sqlite3.connect(self.db_name) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                cl.nom,
+                cl.email,
+                COUNT(c.id) as nb_commandes,
+                COALESCE(SUM(c.total), 0) as total_achats,
+                COALESCE(AVG(c.total), 0) as panier_moyen,
+                MIN(c.date_commande) as premiere_commande,
+                MAX(c.date_commande) as derniere_commande
+            FROM clients cl
+            LEFT JOIN commandes c ON cl.id = c.client_id
+            GROUP BY cl.id, cl.nom, cl.email
+            ORDER BY total_achats DESC
+        """)
+        
+        return [dict(row) for row in cursor.fetchall()]
+
+def analyse_produits(self) -> List[dict]:
+    """Analyse des performances des produits"""
+    with sqlite3.connect(self.db_name) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                p.nom,
+                p.prix,
+                p.stock,
+                COALESCE(SUM(cp.quantite), 0) as total_vendu,
+                COALESCE(SUM(cp.quantite * cp.prix_unitaire), 0) as chiffre_affaires,
+                COUNT(DISTINCT cp.commande_id) as nb_commandes_distinctes
+            FROM produits p
+            LEFT JOIN commande_produits cp ON p.id = cp.produit_id
+            GROUP BY p.id, p.nom, p.prix, p.stock
+            ORDER BY chiffre_affaires DESC
+        """)
+        
+        return [dict(row) for row in cursor.fetchall()]
+```
+
+## 🎯 Démonstration complète
+```python
+def demo_boutique():
+    """Démonstration complète du système"""
+    boutique = BoutiqueBD()
+    
+    print("=== CRÉATION DES DONNÉES ===")
+    
+    # Ajouter des clients
+    clients_data = [
+        Client("Alice Martin", "alice@email.com", "0123456789", "1 rue de la Paix, Paris"),
+        Client("Bob Durand", "bob@email.com", "0987654321", "5 avenue Victor Hugo, Lyon"),
+        Client("Charlie Roy", "charlie@email.com", "0147258369", "10 boulevard Saint-Michel, Marseille")
+    ]
+    
+    clients_ids = []
+    for client in clients_data:
+        client_id = boutique.ajouter_client(client)
+        if client_id:
+            clients_ids.append(client_id)
+    
+    # Ajouter des produits
+    produits_data = [
+        Produit("Ordinateur portable", 899.99, 10, "PC portable 15 pouces"),
+        Produit("Souris sans fil", 29.99, 50, "Souris ergonomique"),
+        Produit("Clavier mécanique", 129.99, 25, "Clavier gaming RGB"),
+        Produit("Écran 4K", 399.99, 8, "Écran 27 pouces 4K")
+    ]
+    
+    produits_ids = []
+    for produit in produits_data:
+        produit_id = boutique.ajouter_produit(produit)
+        if produit_id:
+            produits_ids.append(produit_id)
+    
+    print("\\n=== CRÉATION DE COMMANDES ===")
+    
+    # Commande pour Alice
+    if clients_ids and produits_ids:
+        commande1 = boutique.creer_commande(clients_ids[0])  # Alice
+        if commande1:
+            boutique.ajouter_produit_commande(commande1, produits_ids[0], 1)  # PC
+            boutique.ajouter_produit_commande(commande1, produits_ids[1], 2)  # 2 souris
+        
+        # Commande pour Bob
+        commande2 = boutique.creer_commande(clients_ids[1])  # Bob
+        if commande2:
+            boutique.ajouter_produit_commande(commande2, produits_ids[2], 1)  # Clavier
+            boutique.ajouter_produit_commande(commande2, produits_ids[3], 1)  # Écran
+    
+    print("\\n=== ANALYSES AVEC JOINS ===")
+    
+    # Rapport des ventes
+    rapport = boutique.rapport_ventes()
+    print(f"📊 Total des ventes: {rapport['total_ventes']}€")
+    print(f"📊 Nombre de commandes: {rapport['nombre_commandes']}")
+    print(f"📊 Panier moyen: {rapport['panier_moyen']}€")
+    
+    if rapport['produit_top']:
+        print(f"🏆 Produit top: {rapport['produit_top'][0]} ({rapport['produit_top'][1]} vendus)")
+    
+    if rapport['client_top']:
+        print(f"🏆 Client top: {rapport['client_top'][0]} ({rapport['client_top'][2]}€)")
+    
+    # Statistiques par client
+    print("\\n=== STATISTIQUES CLIENTS ===")
+    stats_clients = boutique.statistiques_par_client()
+    for stat in stats_clients:
+        print(f"👤 {stat['nom']}: {stat['nb_commandes']} commandes, {stat['total_achats']}€")
+    
+    # Clients sans commande
+    sans_commande = boutique.clients_sans_commande()
+    if sans_commande:
+        print("\\n⚠️ Clients sans commande:")
+        for client in sans_commande:
+            print(f"  - {client['nom']} ({client['email']})")
+
+if __name__ == "__main__":
+    demo_boutique()
+```
+
+Les **JOINs** permettent de combiner les données de plusieurs tables pour créer des rapports puissants ! 
+
+**Suite dans la Partie 2B** : APIs et requêtes HTTP ! 🌐''',
+                    'code_exemple': '''# Exemple complet : Système de réservation d'hôtel
+
+import sqlite3
+from datetime import date, datetime, timedelta
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict
+from enum import Enum
+
+class StatutReservation(Enum):
+    CONFIRMEE = "confirmee"
+    ANNULEE = "annulee"
+    EN_ATTENTE = "en_attente"
+    TERMINEE = "terminee"
+
+class TypeChambre(Enum):
+    SIMPLE = "simple"
+    DOUBLE = "double"
+    SUITE = "suite"
+
+@dataclass
+class Client:
+    nom: str
+    prenom: str
+    email: str
+    telephone: str
+    adresse: str = None
+    date_naissance: date = None
+    id: Optional[int] = None
+
+@dataclass
+class Chambre:
+    numero: str
+    type_chambre: TypeChambre
+    prix_nuit: float
+    capacite_max: int
+    description: str = None
+    equipements: List[str] = field(default_factory=list)
+    id: Optional[int] = None
+
+@dataclass
+class Reservation:
+    client_id: int
+    chambre_id: int
+    date_arrivee: date
+    date_depart: date
+    nb_personnes: int
+    prix_total: float = 0.0
+    statut: StatutReservation = StatutReservation.EN_ATTENTE
+    commentaires: str = None
+    id: Optional[int] = None
+
+class HotelDB:
+    """Système de gestion d'hôtel avec relations avancées"""
+    
+    def __init__(self, db_name="hotel.db"):
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        """Initialise la base de données avec toutes les relations"""
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            
+            # Activer les clés étrangères
+            cursor.execute("PRAGMA foreign_keys = ON")
+            
+            # Table des clients
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS clients (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nom TEXT NOT NULL,
+                    prenom TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    telephone TEXT NOT NULL,
+                    adresse TEXT,
+                    date_naissance DATE,
+                    date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    nb_sejours INTEGER DEFAULT 0,
+                    total_depense REAL DEFAULT 0
+                )
+            """)
+            
+            # Table des chambres
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS chambres (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    numero TEXT UNIQUE NOT NULL,
+                    type_chambre TEXT NOT NULL CHECK(type_chambre IN ('simple', 'double', 'suite')),
+                    prix_nuit REAL NOT NULL CHECK(prix_nuit > 0),
+                    capacite_max INTEGER NOT NULL CHECK(capacite_max > 0),
+                    description TEXT,
+                    equipements TEXT, -- JSON string
+                    disponible BOOLEAN DEFAULT 1,
+                    date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Table des réservations
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS reservations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    client_id INTEGER NOT NULL,
+                    chambre_id INTEGER NOT NULL,
+                    date_arrivee DATE NOT NULL,
+                    date_depart DATE NOT NULL,
+                    nb_personnes INTEGER NOT NULL CHECK(nb_personnes > 0),
+                    prix_total REAL NOT NULL CHECK(prix_total >= 0),
+                    statut TEXT DEFAULT 'en_attente' CHECK(statut IN ('confirmee', 'annulee', 'en_attente', 'terminee')),
+                    commentaires TEXT,
+                    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+                    FOREIGN KEY (chambre_id) REFERENCES chambres (id) ON DELETE CASCADE,
+                    CHECK (date_depart > date_arrivee)
+                )
+            """)
+            
+            # Table des services additionnels
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS services (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nom TEXT NOT NULL,
+                    description TEXT,
+                    prix REAL NOT NULL CHECK(prix >= 0),
+                    categorie TEXT DEFAULT 'autre'
+                )
+            """)
+            
+            # Table de liaison réservation-services (N:N)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS reservation_services (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    reservation_id INTEGER NOT NULL,
+                    service_id INTEGER NOT NULL,
+                    quantite INTEGER DEFAULT 1 CHECK(quantite > 0),
+                    prix_unitaire REAL NOT NULL,
+                    FOREIGN KEY (reservation_id) REFERENCES reservations (id) ON DELETE CASCADE,
+                    FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE,
+                    UNIQUE(reservation_id, service_id)
+                )
+            """)
+            
+            # Index pour optimiser les requêtes
+            indexes = [
+                "CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)",
+                "CREATE INDEX IF NOT EXISTS idx_chambres_type ON chambres(type_chambre)",
+                "CREATE INDEX IF NOT EXISTS idx_reservations_dates ON reservations(date_arrivee, date_depart)",
+                "CREATE INDEX IF NOT EXISTS idx_reservations_client ON reservations(client_id)",
+                "CREATE INDEX IF NOT EXISTS idx_reservations_chambre ON reservations(chambre_id)",
+                "CREATE INDEX IF NOT EXISTS idx_reservations_statut ON reservations(statut)"
+            ]
+            
+            for index in indexes:
+                cursor.execute(index)
+            
+            conn.commit()
+            print("✅ Base de données hôtel initialisée")
+    
+    def ajouter_client(self, client: Client) -> Optional[int]:
+        """Ajoute un nouveau client"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO clients (nom, prenom, email, telephone, adresse, date_naissance)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (client.nom, client.prenom, client.email, client.telephone, 
+                      client.adresse, client.date_naissance))
+                
+                client_id = cursor.lastrowid
+                conn.commit()
+                print(f"✅ Client {client.prenom} {client.nom} ajouté (ID: {client_id})")
+                return client_id
+        except sqlite3.IntegrityError:
+            print(f"❌ Email {client.email} déjà utilisé")
+            return None
+    
+    def ajouter_chambre(self, chambre: Chambre) -> Optional[int]:
+        """Ajoute une nouvelle chambre"""
+        try:
+            import json
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO chambres (numero, type_chambre, prix_nuit, capacite_max, description, equipements)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (chambre.numero, chambre.type_chambre.value, chambre.prix_nuit, 
+                      chambre.capacite_max, chambre.description, json.dumps(chambre.equipements)))
+                
+                chambre_id = cursor.lastrowid
+                conn.commit()
+                print(f"✅ Chambre {chambre.numero} ajoutée (ID: {chambre_id})")
+                return chambre_id
+        except sqlite3.IntegrityError:
+            print(f"❌ Numéro de chambre {chambre.numero} déjà utilisé")
+            return None
+    
+    def chambres_disponibles(self, date_arrivee: date, date_depart: date, nb_personnes: int = 1) -> List[Dict]:
+        """Trouve les chambres disponibles pour une période"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT c.* 
+                FROM chambres c
+                WHERE c.disponible = 1 
+                  AND c.capacite_max >= ?
+                  AND c.id NOT IN (
+                      SELECT DISTINCT r.chambre_id
+                      FROM reservations r
+                      WHERE r.statut IN ('confirmee', 'en_attente')
+                        AND NOT (r.date_depart <= ? OR r.date_arrivee >= ?)
+                  )
+                ORDER BY c.prix_nuit
+            """, (nb_personnes, date_arrivee, date_depart))
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def creer_reservation(self, reservation: Reservation) -> Optional[int]:
+        """Crée une nouvelle réservation"""
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                
+                # Vérifier disponibilité
+                disponibles = self.chambres_disponibles(
+                    reservation.date_arrivee, 
+                    reservation.date_depart, 
+                    reservation.nb_personnes
+                )
+                
+                if not any(ch['id'] == reservation.chambre_id for ch in disponibles):
+                    print("❌ Chambre non disponible pour cette période")
+                    return None
+                
+                # Calculer le prix
+                cursor.execute("SELECT prix_nuit FROM chambres WHERE id = ?", (reservation.chambre_id,))
+                prix_nuit = cursor.fetchone()[0]
+                
+                nb_nuits = (reservation.date_depart - reservation.date_arrivee).days
+                prix_total = prix_nuit * nb_nuits
+                
+                # Créer la réservation
+                cursor.execute("""
+                    INSERT INTO reservations (client_id, chambre_id, date_arrivee, date_depart, 
+                                            nb_personnes, prix_total, statut, commentaires)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (reservation.client_id, reservation.chambre_id, reservation.date_arrivee,
+                      reservation.date_depart, reservation.nb_personnes, prix_total,
+                      reservation.statut.value, reservation.commentaires))
+                
+                reservation_id = cursor.lastrowid
+                conn.commit()
+                print(f"✅ Réservation {reservation_id} créée ({nb_nuits} nuits, {prix_total}€)")
+                return reservation_id
+                
+        except Exception as e:
+            print(f"❌ Erreur création réservation: {e}")
+            return None
+    
+    def reservations_client(self, client_id: int) -> List[Dict]:
+        """Récupère toutes les réservations d'un client"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT 
+                    r.id,
+                    r.date_arrivee,
+                    r.date_depart,
+                    r.nb_personnes,
+                    r.prix_total,
+                    r.statut,
+                    r.commentaires,
+                    c.numero as numero_chambre,
+                    c.type_chambre,
+                    cl.nom,
+                    cl.prenom
+                FROM reservations r
+                INNER JOIN chambres c ON r.chambre_id = c.id
+                INNER JOIN clients cl ON r.client_id = cl.id
+                WHERE r.client_id = ?
+                ORDER BY r.date_arrivee DESC
+            """, (client_id,))
+            
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def planning_chambres(self, date_debut: date, date_fin: date) -> Dict:
+        """Planning des chambres sur une période"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Réservations sur la période
+            cursor.execute("""
+                SELECT 
+                    r.date_arrivee,
+                    r.date_depart,
+                    r.statut,
+                    c.numero,
+                    c.type_chambre,
+                    cl.nom,
+                    cl.prenom
+                FROM reservations r
+                INNER JOIN chambres c ON r.chambre_id = c.id
+                INNER JOIN clients cl ON r.client_id = cl.id
+                WHERE r.statut IN ('confirmee', 'en_attente')
+                  AND NOT (r.date_depart <= ? OR r.date_arrivee >= ?)
+                ORDER BY c.numero, r.date_arrivee
+            """, (date_debut, date_fin))
+            
+            reservations = [dict(row) for row in cursor.fetchall()]
+            
+            # Taux d'occupation
+            cursor.execute("""
+                SELECT 
+                    COUNT(DISTINCT c.id) as total_chambres,
+                    COUNT(DISTINCT r.chambre_id) as chambres_occupees
+                FROM chambres c
+                LEFT JOIN reservations r ON c.id = r.chambre_id 
+                    AND r.statut IN ('confirmee', 'en_attente')
+                    AND NOT (r.date_depart <= ? OR r.date_arrivee >= ?)
+            """, (date_debut, date_fin))
+            
+            taux = cursor.fetchone()
+            taux_occupation = (taux['chambres_occupees'] / taux['total_chambres']) * 100 if taux['total_chambres'] > 0 else 0
+            
+            return {
+                'reservations': reservations,
+                'taux_occupation': round(taux_occupation, 1),
+                'chambres_total': taux['total_chambres'],
+                'chambres_occupees': taux['chambres_occupees']
+            }
+    
+    def rapport_financier(self, annee: int = None) -> Dict:
+        """Rapport financier détaillé"""
+        if annee is None:
+            annee = datetime.now().year
+        
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            
+            # Chiffre d'affaires par mois
+            cursor.execute("""
+                SELECT 
+                    strftime('%m', date_arrivee) as mois,
+                    COUNT(*) as nb_reservations,
+                    SUM(prix_total) as ca_mois,
+                    AVG(prix_total) as panier_moyen
+                FROM reservations
+                WHERE strftime('%Y', date_arrivee) = ?
+                  AND statut IN ('confirmee', 'terminee')
+                GROUP BY strftime('%m', date_arrivee)
+                ORDER BY mois
+            """, (str(annee),))
+            
+            ca_mensuel = cursor.fetchall()
+            
+            # Top clients
+            cursor.execute("""
+                SELECT 
+                    cl.nom,
+                    cl.prenom,
+                    cl.email,
+                    COUNT(r.id) as nb_sejours,
+                    SUM(r.prix_total) as total_depense,
+                    AVG(r.prix_total) as sejour_moyen
+                FROM clients cl
+                INNER JOIN reservations r ON cl.id = r.client_id
+                WHERE strftime('%Y', r.date_arrivee) = ?
+                  AND r.statut IN ('confirmee', 'terminee')
+                GROUP BY cl.id
+                ORDER BY total_depense DESC
+                LIMIT 10
+            """, (str(annee),))
+            
+            top_clients = cursor.fetchall()
+            
+            # Performance des chambres
+            cursor.execute("""
+                SELECT 
+                    c.numero,
+                    c.type_chambre,
+                    c.prix_nuit,
+                    COUNT(r.id) as nb_reservations,
+                    SUM(r.prix_total) as ca_chambre,
+                    ROUND(
+                        COUNT(r.id) * 100.0 / 
+                        (julianday(?) - julianday(?) + 1), 2
+                    ) as taux_occupation
+                FROM chambres c
+                LEFT JOIN reservations r ON c.id = r.chambre_id 
+                    AND strftime('%Y', r.date_arrivee) = ?
+                    AND r.statut IN ('confirmee', 'terminee')
+                GROUP BY c.id
+                ORDER BY ca_chambre DESC
+            """, (f"{annee}-12-31", f"{annee}-01-01", str(annee)))
+            
+            perf_chambres = cursor.fetchall()
+            
+            return {
+                'annee': annee,
+                'ca_mensuel': ca_mensuel,
+                'top_clients': top_clients,
+                'performance_chambres': perf_chambres
+            }
+    
+    def clients_fideles(self) -> List[Dict]:
+        """Identifie les clients fidèles"""
+        with sqlite3.connect(self.db_name) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT 
+                    cl.id,
+                    cl.nom,
+                    cl.prenom,
+                    cl.email,
+                    COUNT(r.id) as nb_sejours,
+                    SUM(r.prix_total) as total_depense,
+                    MIN(r.date_arrivee) as premier_sejour,
+                    MAX(r.date_arrivee) as dernier_sejour,
+                    AVG(r.prix_total) as sejour_moyen
+                FROM clients cl
+                INNER JOIN reservations r ON cl.id = r.client_id
+                WHERE r.statut IN ('confirmee', 'terminee')
+                GROUP BY cl.id
+                HAVING COUNT(r.id) >= 3 OR SUM(r.prix_total) >= 1000
+                ORDER BY nb_sejours DESC, total_depense DESC
+            """)
+            
+            return [dict(row) for row in cursor.fetchall()]
+
+def demo_hotel():
+    """Démonstration complète du système hôtel"""
+    hotel = HotelDB()
+    
+    print("=== CRÉATION DES DONNÉES DE TEST ===")
+    
+    # Clients
+    clients = [
+        Client("Dupont", "Jean", "jean.dupont@email.com", "0123456789", "1 rue de la Paix, Paris"),
+        Client("Martin", "Sophie", "sophie.martin@email.com", "0987654321", "5 av Victor Hugo, Lyon"),
+        Client("Durand", "Pierre", "pierre.durand@email.com", "0147258369", "10 bd Saint-Michel, Marseille")
+    ]
+    
+    clients_ids = []
+    for client in clients:
+        client_id = hotel.ajouter_client(client)
+        if client_id:
+            clients_ids.append(client_id)
+    
+    # Chambres
+    chambres = [
+        Chambre("101", TypeChambre.SIMPLE, 89.0, 2, "Chambre simple vue jardin", ["wifi", "tv", "climatisation"]),
+        Chambre("201", TypeChambre.DOUBLE, 129.0, 4, "Chambre double vue mer", ["wifi", "tv", "balcon", "minibar"]),
+        Chambre("301", TypeChambre.SUITE, 299.0, 6, "Suite présidentielle", ["wifi", "tv", "jacuzzi", "service_room"])
+    ]
+    
+    chambres_ids = []
+    for chambre in chambres:
+        chambre_id = hotel.ajouter_chambre(chambre)
+        if chambre_id:
+            chambres_ids.append(chambre_id)
+    
+    print("\\n=== RÉSERVATIONS ===")
+    
+    # Créer des réservations
+    if clients_ids and chambres_ids:
+        # Réservation 1
+        res1 = Reservation(
+            client_id=clients_ids[0],
+            chambre_id=chambres_ids[1],
+            date_arrivee=date(2024, 3, 15),
+            date_depart=date(2024, 3, 18),
+            nb_personnes=2,
+            statut=StatutReservation.CONFIRMEE
+        )
+        hotel.creer_reservation(res1)
+        
+        # Réservation 2
+        res2 = Reservation(
+            client_id=clients_ids[1],
+            chambre_id=chambres_ids[2],
+            date_arrivee=date(2024, 3, 20),
+            date_depart=date(2024, 3, 25),
+            nb_personnes=4,
+            statut=StatutReservation.CONFIRMEE
+        )
+        hotel.creer_reservation(res2)
+    
+    print("\\n=== ANALYSES AVEC JOINS ===")
+    
+    # Planning
+    planning = hotel.planning_chambres(date(2024, 3, 1), date(2024, 3, 31))
+    print(f"📊 Taux d'occupation Mars 2024: {planning['taux_occupation']}%")
+    print(f"📊 Chambres occupées: {planning['chambres_occupees']}/{planning['chambres_total']}")
+    
+    # Clients fidèles
+    fideles = hotel.clients_fideles()
+    if fideles:
+        print("\\n🏆 Clients fidèles:")
+        for client in fideles:
+            print(f"  {client['prenom']} {client['nom']}: {client['nb_sejours']} séjours, {client['total_depense']}€")
+    
+    # Rapport financier
+    rapport = hotel.rapport_financier(2024)
+    print(f"\\n💰 Rapport financier {rapport['annee']}:")
+    print(f"Top client: {rapport['top_clients'][0] if rapport['top_clients'] else 'Aucun'}")
+
+if __name__ == "__main__":
+    demo_hotel()''',
+                    'exercice': '''## 🎯 Exercice : Système de bibliothèque avec relations
+
+**Objectif :** Créer un système complet de bibliothèque avec relations entre tables
+
+### Partie 1 : Modélisation des relations
+
+Créez un système avec ces entités et relations :
+
+#### Tables principales
+```sql
+-- Auteurs
+CREATE TABLE auteurs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL,
+    date_naissance DATE,
+    nationalite TEXT,
+    biographie TEXT
+);
+
+-- Livres
+CREATE TABLE livres (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    isbn TEXT UNIQUE,
+    date_publication DATE,
+    nombre_pages INTEGER,
+    genre TEXT,
+    resume TEXT,
+    stock_total INTEGER DEFAULT 1,
+    stock_disponible INTEGER DEFAULT 1
+);
+
+-- Relation N:N Livres-Auteurs
+CREATE TABLE livre_auteurs (
+    livre_id INTEGER,
+    auteur_id INTEGER,
+    role TEXT DEFAULT 'auteur', -- 'auteur', 'co-auteur', 'traducteur'
+    PRIMARY KEY (livre_id, auteur_id),
+    FOREIGN KEY (livre_id) REFERENCES livres (id),
+    FOREIGN KEY (auteur_id) REFERENCES auteurs (id)
+);
+
+-- Membres
+CREATE TABLE membres (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    telephone TEXT,
+    adresse TEXT,
+    date_inscription DATE DEFAULT (date('now')),
+    type_membre TEXT DEFAULT 'standard', -- 'standard', 'premium', 'etudiant'
+    actif BOOLEAN DEFAULT 1
+);
+
+-- Emprunts
+CREATE TABLE emprunts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    membre_id INTEGER NOT NULL,
+    livre_id INTEGER NOT NULL,
+    date_emprunt DATE DEFAULT (date('now')),
+    date_retour_prevue DATE NOT NULL,
+    date_retour_effective DATE,
+    amende REAL DEFAULT 0,
+    statut TEXT DEFAULT 'en_cours', -- 'en_cours', 'retourne', 'perdu'
+    FOREIGN KEY (membre_id) REFERENCES membres (id),
+    FOREIGN KEY (livre_id) REFERENCES livres (id)
+);
+```
+
+### Partie 2 : Classes Python
+
+```python
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from typing import List, Optional, Dict
+import sqlite3
+
+@dataclass
+class Auteur:
+    nom: str
+    prenom: str
+    date_naissance: date = None
+    nationalite: str = None
+    biographie: str = None
+    id: Optional[int] = None
+
+@dataclass
+class Livre:
+    titre: str
+    isbn: str = None
+    date_publication: date = None
+    nombre_pages: int = None
+    genre: str = None
+    resume: str = None
+    stock_total: int = 1
+    stock_disponible: int = 1
+    id: Optional[int] = None
+
+@dataclass
+class Membre:
+    nom: str
+    prenom: str
+    email: str
+    telephone: str = None
+    adresse: str = None
+    type_membre: str = 'standard'
+    actif: bool = True
+    id: Optional[int] = None
+
+@dataclass
+class Emprunt:
+    membre_id: int
+    livre_id: int
+    date_emprunt: date = None
+    date_retour_prevue: date = None
+    date_retour_effective: date = None
+    amende: float = 0.0
+    statut: str = 'en_cours'
+    id: Optional[int] = None
+
+class BibliothequeDB:
+    def __init__(self, db_name="bibliotheque.db"):
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        """Initialise toutes les tables avec relations"""
+        # À implémenter
+        pass
+    
+    # === GESTION DES AUTEURS ===
+    
+    def ajouter_auteur(self, auteur: Auteur) -> Optional[int]:
+        """Ajoute un auteur"""
+        pass
+    
+    def rechercher_auteurs(self, terme: str) -> List[Dict]:
+        """Recherche d'auteurs par nom/prénom"""
+        pass
+    
+    # === GESTION DES LIVRES ===
+    
+    def ajouter_livre(self, livre: Livre, auteurs_ids: List[int]) -> Optional[int]:
+        """Ajoute un livre avec ses auteurs"""
+        pass
+    
+    def livres_par_auteur(self, auteur_id: int) -> List[Dict]:
+        """Tous les livres d'un auteur avec JOINs"""
+        pass
+    
+    def livres_disponibles(self, genre: str = None) -> List[Dict]:
+        """Livres disponibles à l'emprunt"""
+        pass
+    
+    def rechercher_livres(self, terme: str) -> List[Dict]:
+        """Recherche par titre, auteur, ISBN"""
+        pass
+    
+    # === GESTION DES MEMBRES ===
+    
+    def inscrire_membre(self, membre: Membre) -> Optional[int]:
+        """Inscrit un nouveau membre"""
+        pass
+    
+    def membres_actifs(self) -> List[Dict]:
+        """Liste des membres actifs"""
+        pass
+    
+    # === GESTION DES EMPRUNTS ===
+    
+    def emprunter_livre(self, membre_id: int, livre_id: int, duree_jours: int = 14) -> Optional[int]:
+        """Crée un emprunt"""
+        # Vérifications :
+        # - Livre disponible
+        # - Membre actif
+        # - Limite d'emprunts par membre
+        pass
+    
+    def retourner_livre(self, emprunt_id: int) -> bool:
+        """Retourne un livre"""
+        # Calculer les amendes si retard
+        pass
+    
+    def emprunts_membre(self, membre_id: int, actifs_seulement: bool = False) -> List[Dict]:
+        """Emprunts d'un membre avec détails livre/auteur"""
+        pass
+    
+    def emprunts_en_retard(self) -> List[Dict]:
+        """Emprunts en retard avec JOINs"""
+        pass
+    
+    # === STATISTIQUES AVANCÉES ===
+    
+    def top_livres_empruntes(self, limite: int = 10) -> List[Dict]:
+        """Livres les plus empruntés"""
+        pass
+    
+    def top_auteurs_populaires(self, limite: int = 10) -> List[Dict]:
+        """Auteurs les plus empruntés"""
+        pass
+    
+    def membres_les_plus_actifs(self, limite: int = 10) -> List[Dict]:
+        """Membres avec le plus d'emprunts"""
+        pass
+    
+    def rapport_genre(self) -> List[Dict]:
+        """Statistiques par genre de livre"""
+        pass
+    
+    def evolution_emprunts_mensuelle(self, annee: int) -> List[Dict]:
+        """Évolution mensuelle des emprunts"""
+        pass
+```
+
+### Partie 3 : Requêtes JOIN avancées
+
+Implémentez ces requêtes complexes :
+
+#### A. Catalogue complet avec auteurs
+```sql
+SELECT 
+    l.titre,
+    l.isbn,
+    l.genre,
+    l.stock_disponible,
+    GROUP_CONCAT(a.prenom || ' ' || a.nom, ', ') as auteurs
+FROM livres l
+LEFT JOIN livre_auteurs la ON l.id = la.livre_id
+LEFT JOIN auteurs a ON la.auteur_id = a.id
+GROUP BY l.id
+ORDER BY l.titre;
+```
+
+#### B. Membres avec leurs statistiques d'emprunt
+```sql
+SELECT 
+    m.prenom || ' ' || m.nom as nom_complet,
+    m.email,
+    m.type_membre,
+    COUNT(e.id) as total_emprunts,
+    COUNT(CASE WHEN e.statut = 'en_cours' THEN 1 END) as emprunts_actuels,
+    COALESCE(SUM(e.amende), 0) as total_amendes,
+    MAX(e.date_emprunt) as dernier_emprunt
+FROM membres m
+LEFT JOIN emprunts e ON m.id = e.membre_id
+WHERE m.actif = 1
+GROUP BY m.id
+ORDER BY total_emprunts DESC;
+```
+
+#### C. Auteurs avec leur productivité
+```sql
+SELECT 
+    a.prenom || ' ' || a.nom as auteur,
+    a.nationalite,
+    COUNT(DISTINCT l.id) as nb_livres,
+    COUNT(e.id) as total_emprunts,
+    AVG(l.nombre_pages) as pages_moyennes
+FROM auteurs a
+LEFT JOIN livre_auteurs la ON a.id = la.auteur_id
+LEFT JOIN livres l ON la.livre_id = l.id
+LEFT JOIN emprunts e ON l.id = e.livre_id
+GROUP BY a.id
+HAVING COUNT(DISTINCT l.id) > 0
+ORDER BY nb_livres DESC, total_emprunts DESC;
+```
+
+### Partie 4 : Analyses et rapports
+
+#### A. Tableau de bord de la bibliothèque
+```python
+def tableau_de_bord(self) -> Dict:
+    """Indicateurs clés de performance"""
+    # Implémenter :
+    # - Nombre total de livres/membres
+    # - Taux d'occupation des livres
+    # - Moyenne d'emprunts par membre
+    # - Top 5 genres les plus populaires
+    # - Amendes impayées
+    pass
+```
+
+#### B. Recommandations de livres
+```python
+def recommander_livres(self, membre_id: int, limite: int = 5) -> List[Dict]:
+    """Recommande des livres basé sur l'historique"""
+    # Logique :
+    # - Analyser les genres préférés du membre
+    # - Trouver des livres similaires non empruntés
+    # - Privilégier les livres populaires
+    pass
+```
+
+#### C. Gestion des stocks
+```python
+def livres_populaires_faible_stock(self) -> List[Dict]:
+    """Identifie les livres à racheter"""
+    # Livres très empruntés mais avec peu de stock
+    pass
+
+def livres_jamais_empruntes(self) -> List[Dict]:
+    """Livres qui ne sortent jamais"""
+    pass
+```
+
+### Partie 5 : Interface utilisateur
+
+Créez un menu avec :
+
+1. **Gestion du catalogue**
+   - Ajouter livre/auteur
+   - Recherche multicritères
+   - Gestion des stocks
+
+2. **Gestion des membres**
+   - Inscription/modification
+   - Historique des emprunts
+   - Gestion des amendes
+
+3. **Emprunts/Retours**
+   - Nouvel emprunt
+   - Retour de livre
+   - Prolongation
+
+4. **Rapports et analyses**
+   - Tableau de bord
+   - Statistiques détaillées
+   - Export des données
+
+### Partie 6 : Données de test
+
+```python
+def creer_donnees_test():
+    """Crée un jeu de données réalistes"""
+    # 20+ auteurs variés
+    # 100+ livres de différents genres
+    # 50+ membres actifs
+    # 200+ emprunts historiques
+    pass
+```
+
+### Fonctionnalités bonus
+
+1. **Réservations** : Système de réservation pour livres empruntés
+2. **Notifications** : Rappels de retour par email
+3. **Code-barres** : Gestion par scan de codes
+4. **Multi-bibliothèques** : Réseau de bibliothèques
+5. **API REST** : Interface pour applications mobiles
+6. **Statistiques avancées** : Analyses prédictives
+7. **Import/Export** : Intégration avec autres systèmes
+
+### Critères de réussite
+
+- ✅ Relations bien modélisées et contraintes respectées
+- ✅ Requêtes JOIN optimisées et performantes  
+- ✅ Gestion complète du cycle de vie des emprunts
+- ✅ Statistiques pertinentes et actionables
+- ✅ Interface utilisateur complète et intuitive
+- ✅ Performance correcte avec 10 000+ livres
+- ✅ Intégrité des données garantie
+
+**Challenge :** Le système doit gérer une vraie bibliothèque avec des milliers de livres et centaines de membres ! 📚'''
+                }
+            )
 
         # Cours 4: Python Expert (renommé et réordonné)  
         cours_expert, created = Cours.objects.get_or_create(
