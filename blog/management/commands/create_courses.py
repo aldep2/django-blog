@@ -9454,6 +9454,975 @@ def create_test_data():
 **Challenge :** Gérer 10+ villes avec historique de 6 mois ! 🌤️'''
                 }
             )
+            
+            # Chapitre 6: APIs Avancées - Partie 2B2 (NOUVEAU)
+            Chapitre.objects.get_or_create(
+                cours=cours_avance,
+                slug='apis-http-partie2b2',
+                defaults={
+                    'titre': 'APIs Avancées - Partie 2B2',
+                    'ordre': 9,
+                    'contenu': '''# APIs Avancées en Python - Partie 2B2
+
+## 🔐 Authentification OAuth 2.0
+
+### Qu'est-ce qu'OAuth ?
+OAuth 2.0 est un protocole d'autorisation qui permet aux applications d'accéder aux ressources d'un utilisateur sans connaître son mot de passe.
+
+**Flow Authorization Code :**
+```python
+import requests
+from urllib.parse import urlencode, parse_qs
+import secrets
+import base64
+import hashlib
+
+class OAuthClient:
+    def __init__(self, client_id, client_secret, redirect_uri):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
+        self.access_token = None
+    
+    def generate_auth_url(self, scope, auth_url):
+        """Génère l'URL d'autorisation OAuth"""
+        # PKCE pour plus de sécurité
+        code_verifier = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode('utf-8').rstrip('=')
+        
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode()).digest()
+        ).decode('utf-8').rstrip('=')
+        
+        params = {
+            'response_type': 'code',
+            'client_id': self.client_id,
+            'redirect_uri': self.redirect_uri,
+            'scope': scope,
+            'state': secrets.token_urlsafe(32),
+            'code_challenge': code_challenge,
+            'code_challenge_method': 'S256'
+        }
+        
+        return f"{auth_url}?{urlencode(params)}", code_verifier
+    
+    def exchange_code_for_token(self, code, token_url, code_verifier):
+        """Échange le code d'autorisation contre un token"""
+        data = {
+            'grant_type': 'authorization_code',
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'code': code,
+            'redirect_uri': self.redirect_uri,
+            'code_verifier': code_verifier
+        }
+        
+        response = requests.post(token_url, data=data)
+        if response.status_code == 200:
+            token_data = response.json()
+            self.access_token = token_data['access_token']
+            return token_data
+        else:
+            raise Exception(f"Erreur OAuth: {response.text}")
+    
+    def make_authenticated_request(self, url):
+        """Fait une requête authentifiée"""
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.get(url, headers=headers)
+        return response.json()
+```
+
+## 🔑 JWT (JSON Web Tokens)
+
+### Comprendre et manipuler les JWT
+```python
+import jwt
+import json
+from datetime import datetime, timedelta
+import secrets
+
+class JWTManager:
+    def __init__(self, secret_key=None):
+        self.secret_key = secret_key or secrets.token_urlsafe(32)
+    
+    def create_token(self, payload, expires_in_hours=24):
+        """Crée un JWT avec expiration"""
+        # Ajouter les claims standard
+        now = datetime.utcnow()
+        payload.update({
+            'iat': now,  # issued at
+            'exp': now + timedelta(hours=expires_in_hours),  # expiration
+            'jti': secrets.token_urlsafe(16)  # JWT ID unique
+        })
+        
+        token = jwt.encode(payload, self.secret_key, algorithm='HS256')
+        return token
+    
+    def verify_token(self, token):
+        """Vérifie et décode un JWT"""
+        try:
+            payload = jwt.decode(
+                token, 
+                self.secret_key, 
+                algorithms=['HS256']
+            )
+            return True, payload
+        except jwt.ExpiredSignatureError:
+            return False, "Token expiré"
+        except jwt.InvalidTokenError as e:
+            return False, f"Token invalide: {str(e)}"
+    
+    def refresh_token(self, token):
+        """Renouvelle un token existant"""
+        valid, payload = self.verify_token(token)
+        if valid:
+            # Supprimer les claims temporels pour créer un nouveau token
+            user_payload = {k: v for k, v in payload.items() 
+                           if k not in ['iat', 'exp', 'jti']}
+            return self.create_token(user_payload)
+        else:
+            raise Exception(f"Impossible de renouveler: {payload}")
+
+# Utilisation
+jwt_manager = JWTManager()
+
+# Créer un token pour un utilisateur
+user_data = {
+    'user_id': 123,
+    'username': 'alice',
+    'role': 'admin'
+}
+
+token = jwt_manager.create_token(user_data)
+print(f"Token créé: {token[:50]}...")
+
+# Vérifier le token
+valid, decoded = jwt_manager.verify_token(token)
+if valid:
+    print(f"Token valide pour: {decoded['username']}")
+else:
+    print(f"Erreur: {decoded}")
+```
+
+## 🪝 Webhooks - Recevoir des événements
+
+### Serveur webhook simple avec Flask
+```python
+from flask import Flask, request, jsonify
+import hmac
+import hashlib
+import json
+from datetime import datetime
+
+app = Flask(__name__)
+
+# Configuration
+WEBHOOK_SECRET = "votre_secret_webhook"
+received_events = []
+
+def verify_webhook_signature(payload, signature, secret):
+    """Vérifie la signature HMAC du webhook"""
+    expected_signature = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(f"sha256={expected_signature}", signature)
+
+@app.route('/webhook', methods=['POST'])
+def handle_webhook():
+    """Endpoint pour recevoir les webhooks"""
+    
+    # Récupérer la signature
+    signature = request.headers.get('X-Hub-Signature-256')
+    if not signature:
+        return jsonify({'error': 'Signature manquante'}), 400
+    
+    # Vérifier la signature
+    payload = request.get_data()
+    if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
+        return jsonify({'error': 'Signature invalide'}), 401
+    
+    # Traiter l'événement
+    try:
+        event_data = request.json
+        event_type = request.headers.get('X-Event-Type', 'unknown')
+        
+        # Enregistrer l'événement
+        event = {
+            'id': len(received_events) + 1,
+            'type': event_type,
+            'data': event_data,
+            'timestamp': datetime.utcnow().isoformat(),
+            'processed': False
+        }
+        
+        received_events.append(event)
+        
+        # Traitement en fonction du type d'événement
+        if event_type == 'user.created':
+            process_user_created(event_data)
+        elif event_type == 'payment.completed':
+            process_payment_completed(event_data)
+        
+        return jsonify({
+            'status': 'success',
+            'event_id': event['id']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def process_user_created(data):
+    """Traite la création d'un utilisateur"""
+    user_id = data.get('user_id')
+    email = data.get('email')
+    
+    print(f"🎉 Nouvel utilisateur créé: {email} (ID: {user_id})")
+    # Ici: envoyer email de bienvenue, créer profil, etc.
+
+def process_payment_completed(data):
+    """Traite un paiement complété"""
+    payment_id = data.get('payment_id')
+    amount = data.get('amount')
+    
+    print(f"💰 Paiement reçu: {amount}€ (ID: {payment_id})")
+    # Ici: mettre à jour commande, envoyer reçu, etc.
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+```
+
+## 🔍 GraphQL avec Python
+
+### Client GraphQL simple
+```python
+import requests
+import json
+
+class GraphQLClient:
+    def __init__(self, endpoint, headers=None):
+        self.endpoint = endpoint
+        self.headers = headers or {'Content-Type': 'application/json'}
+    
+    def execute(self, query, variables=None):
+        """Exécute une requête GraphQL"""
+        payload = {
+            'query': query,
+            'variables': variables or {}
+        }
+        
+        response = requests.post(
+            self.endpoint,
+            headers=self.headers,
+            data=json.dumps(payload)
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'errors' in result:
+                raise Exception(f"Erreurs GraphQL: {result['errors']}")
+            return result['data']
+        else:
+            raise Exception(f"Erreur HTTP {response.status_code}: {response.text}")
+
+# Exemple d'utilisation avec GitHub API
+github_client = GraphQLClient(
+    'https://api.github.com/graphql',
+    headers={
+        'Authorization': 'Bearer YOUR_GITHUB_TOKEN',
+        'Content-Type': 'application/json'
+    }
+)
+
+# Requête GraphQL pour récupérer des repos
+query = """
+query GetUserRepos($login: String!, $first: Int!) {
+    user(login: $login) {
+        name
+        repositories(first: $first, orderBy: {field: UPDATED_AT, direction: DESC}) {
+            nodes {
+                name
+                description
+                stargazerCount
+                primaryLanguage {
+                    name
+                }
+                updatedAt
+            }
+        }
+    }
+}
+"""
+
+try:
+    data = github_client.execute(query, {
+        'login': 'octocat',
+        'first': 5
+    })
+    
+    user = data['user']
+    print(f"📊 Repos de {user['name']}:")
+    
+    for repo in user['repositories']['nodes']:
+        lang = repo['primaryLanguage']['name'] if repo['primaryLanguage'] else 'N/A'
+        print(f"  • {repo['name']} ({lang}) - ⭐ {repo['stargazerCount']}")
+        
+except Exception as e:
+    print(f"❌ Erreur: {e}")
+```
+
+## 📄 Pagination avancée
+
+### Pagination par curseur (recommandée)
+```python
+import requests
+from datetime import datetime
+import time
+
+class PaginatedAPIClient:
+    def __init__(self, base_url, headers=None):
+        self.base_url = base_url.rstrip('/')
+        self.headers = headers or {}
+    
+    def fetch_all_pages_cursor(self, endpoint, cursor_param='cursor', 
+                              limit_param='limit', limit=100, max_pages=None):
+        """Récupère toutes les pages avec pagination par curseur"""
+        all_data = []
+        cursor = None
+        page_count = 0
+        
+        while True:
+            if max_pages and page_count >= max_pages:
+                break
+                
+            # Construire les paramètres
+            params = {limit_param: limit}
+            if cursor:
+                params[cursor_param] = cursor
+            
+            # Faire la requête
+            url = f"{self.base_url}/{endpoint.lstrip('/')}"
+            response = requests.get(url, headers=self.headers, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Extraire les données (adapter selon l'API)
+            items = data.get('data', data.get('results', []))
+            all_data.extend(items)
+            
+            page_count += 1
+            print(f"📄 Page {page_count} récupérée: {len(items)} éléments")
+            
+            # Vérifier s'il y a une page suivante
+            next_cursor = data.get('next_cursor')
+            if not next_cursor or not items:
+                break
+                
+            cursor = next_cursor
+            
+            # Rate limiting gentil
+            time.sleep(0.1)
+        
+        return all_data, page_count
+
+# Exemple d'utilisation
+client = PaginatedAPIClient('https://api.example.com')
+
+# Récupération avec curseur
+all_users, pages = client.fetch_all_pages_cursor(
+    'users', 
+    max_pages=10
+)
+print(f"✅ Récupéré {len(all_users)} utilisateurs en {pages} pages")
+```
+
+## ⚡ Rate Limiting et Retry
+
+### Gestion intelligente du rate limiting
+```python
+import time
+import random
+from functools import wraps
+import requests
+
+class RateLimiter:
+    def __init__(self, max_calls=60, time_window=60):
+        self.max_calls = max_calls
+        self.time_window = time_window
+        self.calls = []
+    
+    def is_allowed(self):
+        now = time.time()
+        # Supprimer les appels anciens
+        self.calls = [call_time for call_time in self.calls 
+                     if now - call_time < self.time_window]
+        
+        if len(self.calls) < self.max_calls:
+            self.calls.append(now)
+            return True
+        return False
+    
+    def wait_time(self):
+        if not self.calls:
+            return 0
+        oldest_call = min(self.calls)
+        return max(0, self.time_window - (time.time() - oldest_call))
+
+def retry_with_backoff(max_retries=3, base_delay=1, max_delay=60):
+    """Décorateur pour retry avec backoff exponentiel"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except requests.exceptions.RequestException as e:
+                    if attempt == max_retries:
+                        raise e
+                    
+                    # Calculer le délai avec jitter
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    jitter = random.uniform(0, 0.1) * delay
+                    total_delay = delay + jitter
+                    
+                    print(f"🔄 Tentative {attempt + 1} échouée, retry dans {total_delay:.1f}s...")
+                    time.sleep(total_delay)
+            
+        return wrapper
+    return decorator
+
+class SmartAPIClient:
+    def __init__(self, base_url, rate_limiter=None):
+        self.base_url = base_url
+        self.rate_limiter = rate_limiter or RateLimiter()
+        self.session = requests.Session()
+    
+    @retry_with_backoff(max_retries=3)
+    def make_request(self, method, endpoint, **kwargs):
+        """Fait une requête avec rate limiting et retry"""
+        
+        # Attendre si rate limit atteint
+        while not self.rate_limiter.is_allowed():
+            wait_time = self.rate_limiter.wait_time()
+            print(f"⏳ Rate limit atteint, attente de {wait_time:.1f}s...")
+            time.sleep(wait_time)
+        
+        url = f"{self.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+        
+        response = self.session.request(method, url, **kwargs)
+        
+        # Gestion spéciale du rate limiting API
+        if response.status_code == 429:  # Too Many Requests
+            retry_after = int(response.headers.get('Retry-After', 60))
+            print(f"🛑 Rate limit API, attente de {retry_after}s...")
+            time.sleep(retry_after)
+            raise requests.exceptions.RequestException("Rate limit API")
+        
+        response.raise_for_status()
+        return response
+    
+    def get(self, endpoint, **kwargs):
+        return self.make_request('GET', endpoint, **kwargs)
+    
+    def post(self, endpoint, **kwargs):
+        return self.make_request('POST', endpoint, **kwargs)
+
+# Utilisation
+rate_limiter = RateLimiter(max_calls=100, time_window=60)  # 100 calls/min
+client = SmartAPIClient('https://api.example.com', rate_limiter)
+
+# Les requêtes sont automatiquement limitées et retry en cas d'erreur
+for i in range(150):  # Plus que la limite
+    try:
+        response = client.get(f'users/{i}')
+        print(f"✅ Utilisateur {i} récupéré")
+    except Exception as e:
+        print(f"❌ Erreur pour utilisateur {i}: {e}")
+        break
+```
+
+## 🏆 Bonnes pratiques APIs avancées
+
+### 1. Configuration centralisée
+```python
+from dataclasses import dataclass
+from typing import Optional
+import os
+
+@dataclass
+class APIConfig:
+    base_url: str
+    timeout: int = 30
+    max_retries: int = 3
+    rate_limit: int = 60
+    api_key: Optional[str] = None
+    
+    @classmethod
+    def from_env(cls, prefix="API_"):
+        return cls(
+            base_url=os.getenv(f"{prefix}BASE_URL"),
+            timeout=int(os.getenv(f"{prefix}TIMEOUT", "30")),
+            max_retries=int(os.getenv(f"{prefix}MAX_RETRIES", "3")),
+            rate_limit=int(os.getenv(f"{prefix}RATE_LIMIT", "60")),
+            api_key=os.getenv(f"{prefix}KEY")
+        )
+```
+
+### 2. Logging et monitoring
+```python
+import logging
+from datetime import datetime
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+api_logger = logging.getLogger('api_client')
+
+class MonitoredAPIClient:
+    def __init__(self, config):
+        self.config = config
+        self.stats = {
+            'total_requests': 0,
+            'success_requests': 0,
+            'failed_requests': 0,
+            'total_time': 0
+        }
+    
+    def make_request_with_monitoring(self, method, url, **kwargs):
+        start_time = time.time()
+        self.stats['total_requests'] += 1
+        
+        try:
+            response = requests.request(method, url, **kwargs)
+            response.raise_for_status()
+            
+            self.stats['success_requests'] += 1
+            duration = time.time() - start_time
+            self.stats['total_time'] += duration
+            
+            api_logger.info(
+                f"{method} {url} - {response.status_code} - {duration:.2f}s"
+            )
+            
+            return response
+            
+        except Exception as e:
+            self.stats['failed_requests'] += 1
+            api_logger.error(f"{method} {url} - ERROR: {e}")
+            raise
+    
+    def get_stats(self):
+        if self.stats['total_requests'] > 0:
+            avg_time = self.stats['total_time'] / self.stats['success_requests']
+            success_rate = self.stats['success_requests'] / self.stats['total_requests']
+        else:
+            avg_time = 0
+            success_rate = 0
+        
+        return {
+            **self.stats,
+            'average_response_time': avg_time,
+            'success_rate': success_rate
+        }
+```''',
+                    'code_exemple': '''# Exemple complet : Client API avancé multi-services
+
+import requests
+import json
+import time
+from datetime import datetime, timedelta
+from dataclasses import dataclass, asdict
+from typing import Optional, Dict, Any, List
+import logging
+import jwt
+from urllib.parse import urlencode
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@dataclass
+class APICredentials:
+    """Classe pour stocker les credentials d'API"""
+    api_key: Optional[str] = None
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    token_expires_at: Optional[datetime] = None
+
+class UnifiedAPIClient:
+    """Client API unifié avec support OAuth, JWT, et rate limiting"""
+    
+    def __init__(self, base_url: str, credentials: APICredentials):
+        self.base_url = base_url.rstrip('/')
+        self.credentials = credentials
+        self.session = requests.Session()
+        self.rate_limits = {}
+        self.stats = {
+            'requests_made': 0,
+            'requests_successful': 0,
+            'requests_failed': 0,
+            'total_response_time': 0
+        }
+        
+        # Configuration par défaut
+        self.session.timeout = 30
+        self.session.headers.update({
+            'User-Agent': 'UnifiedAPIClient/1.0',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        })
+    
+    def _setup_auth(self):
+        """Configure l'authentification selon le type disponible"""
+        if self.credentials.access_token:
+            if self._is_token_expired():
+                self._refresh_access_token()
+            self.session.headers['Authorization'] = f'Bearer {self.credentials.access_token}'
+        elif self.credentials.api_key:
+            self.session.headers['X-API-Key'] = self.credentials.api_key
+    
+    def _is_token_expired(self) -> bool:
+        """Vérifie si le token d'accès est expiré"""
+        if not self.credentials.token_expires_at:
+            return False
+        return datetime.utcnow() >= self.credentials.token_expires_at
+    
+    def _refresh_access_token(self):
+        """Renouvelle le token d'accès avec le refresh token"""
+        if not self.credentials.refresh_token:
+            raise Exception("Pas de refresh token disponible")
+        
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': self.credentials.refresh_token,
+            'client_id': self.credentials.client_id,
+            'client_secret': self.credentials.client_secret
+        }
+        
+        response = requests.post(f"{self.base_url}/oauth/token", data=data)
+        if response.status_code == 200:
+            token_data = response.json()
+            self.credentials.access_token = token_data['access_token']
+            self.credentials.token_expires_at = datetime.utcnow() + timedelta(
+                seconds=token_data.get('expires_in', 3600)
+            )
+            logger.info("Token d'accès renouvelé avec succès")
+        else:
+            raise Exception(f"Impossible de renouveler le token: {response.text}")
+    
+    def make_request(self, method: str, endpoint: str, **kwargs) -> requests.Response:
+        """Fait une requête HTTP avec toutes les protections"""
+        start_time = time.time()
+        self.stats['requests_made'] += 1
+        
+        # Authentification
+        self._setup_auth()
+        
+        # Construction de l'URL
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        
+        try:
+            # Faire la requête
+            response = self.session.request(method.upper(), url, **kwargs)
+            
+            # Gestion des erreurs HTTP
+            if response.status_code == 429:  # Too Many Requests
+                retry_after = int(response.headers.get('Retry-After', 60))
+                logger.warning(f"Rate limit API atteint, attente de {retry_after}s")
+                time.sleep(retry_after)
+                return self.make_request(method, endpoint, **kwargs)  # Retry
+            
+            response.raise_for_status()
+            
+            # Statistiques de succès
+            duration = time.time() - start_time
+            self.stats['requests_successful'] += 1
+            self.stats['total_response_time'] += duration
+            
+            logger.info(f"{method.upper()} {endpoint} - {response.status_code} - {duration:.2f}s")
+            
+            return response
+            
+        except requests.exceptions.RequestException as e:
+            self.stats['requests_failed'] += 1
+            logger.error(f"Erreur requête {method.upper()} {endpoint}: {e}")
+            raise
+    
+    # Méthodes de convenance
+    def get(self, endpoint: str, params: Dict = None) -> Dict[str, Any]:
+        """GET request avec parsing JSON automatique"""
+        response = self.make_request('GET', endpoint, params=params)
+        return response.json()
+    
+    def post(self, endpoint: str, data: Dict = None) -> Dict[str, Any]:
+        """POST request avec parsing JSON automatique"""
+        response = self.make_request('POST', endpoint, json=data)
+        return response.json()
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Retourne les statistiques d'utilisation"""
+        if self.stats['requests_successful'] > 0:
+            avg_response_time = (
+                self.stats['total_response_time'] / self.stats['requests_successful']
+            )
+        else:
+            avg_response_time = 0
+        
+        success_rate = 0
+        if self.stats['requests_made'] > 0:
+            success_rate = (
+                self.stats['requests_successful'] / self.stats['requests_made']
+            ) * 100
+        
+        return {
+            'total_requests': self.stats['requests_made'],
+            'successful_requests': self.stats['requests_successful'],
+            'failed_requests': self.stats['requests_failed'],
+            'average_response_time': round(avg_response_time, 3),
+            'success_rate_percentage': round(success_rate, 1)
+        }
+
+# Classes spécialisées pour différents services
+class GitHubAPIClient(UnifiedAPIClient):
+    """Client spécialisé pour GitHub API"""
+    
+    def __init__(self, access_token: str):
+        credentials = APICredentials(access_token=access_token)
+        super().__init__('https://api.github.com', credentials)
+    
+    def get_user_repos(self, username: str) -> List[Dict]:
+        """Récupère tous les repos d'un utilisateur"""
+        return self.get(f'users/{username}/repos')
+    
+    def search_repositories(self, query: str, sort: str = 'stars') -> List[Dict]:
+        """Recherche des repositories"""
+        params = {'q': query, 'sort': sort, 'order': 'desc'}
+        data = self.get('search/repositories', params=params)
+        return data.get('items', [])
+
+# Exemple d'utilisation
+def main():
+    # GitHub API
+    github_client = GitHubAPIClient('your_github_token')
+    
+    try:
+        # Rechercher des repos Python populaires
+        python_repos = github_client.search_repositories('language:python', sort='stars')
+        print(f"🐍 Top repos Python: {len(python_repos)}")
+        
+        for repo in python_repos[:5]:
+            print(f"  ⭐ {repo['full_name']} ({repo['stargazers_count']} stars)")
+        
+        # Statistiques
+        stats = github_client.get_stats()
+        print(f"\\n📈 Statistiques API:")
+        print(f"  Requêtes: {stats['total_requests']}")
+        print(f"  Taux de succès: {stats['success_rate_percentage']}%")
+        print(f"  Temps moyen: {stats['average_response_time']}s")
+        
+    except Exception as e:
+        logger.error(f"Erreur: {e}")
+
+if __name__ == "__main__":
+    main()''',
+                    'exercice': '''## 🎯 Exercice Final : Agrégateur Multi-APIs
+
+**Mission :** Créer un système qui agrège des données de plusieurs APIs pour créer un tableau de bord unifié.
+
+### 🎯 Objectif Principal
+Développer un **agrégateur intelligent** qui collecte des données depuis 3+ APIs différentes et génère un rapport consolidé.
+
+### 📋 APIs à intégrer (choisir 3+)
+
+#### 1. **GitHub API** (obligatoire)
+- Repos d'un utilisateur/organisation
+- Issues et pull requests
+- Commits récents
+- Statistiques de contribution
+
+#### 2. **API Météo** (exemple: OpenWeatherMap)
+- Météo actuelle de plusieurs villes
+- Prévisions sur 5 jours
+- Alertes météorologiques
+
+#### 3. **API Crypto** (CoinGecko/CoinMarketCap)
+- Prix des cryptomonnaies
+- Évolution sur 24h
+- Top 10 des cryptos
+
+#### 4. **API News** (NewsAPI/Reddit)
+- Actualités par catégorie
+- Trending posts
+- Analyse de sentiment
+
+### 🏗️ Architecture à implémenter
+
+```python
+class APIAggregator:
+    def __init__(self):
+        self.clients = {}
+        self.cache = {}
+        self.reports = []
+    
+    def register_client(self, name: str, client: UnifiedAPIClient):
+        """Enregistre un client API"""
+        pass
+    
+    def fetch_all_data(self) -> Dict:
+        """Récupère les données de toutes les APIs"""
+        pass
+    
+    def generate_report(self) -> Dict:
+        """Génère un rapport consolidé"""
+        pass
+    
+    def save_report(self, format: str = 'json'):
+        """Sauvegarde le rapport (JSON/HTML/PDF)"""
+        pass
+```
+
+### ⚙️ Fonctionnalités requises
+
+#### 1. **Gestion multi-APIs**
+- ✅ Support de 3+ APIs différentes
+- ✅ Gestion d'authentification variée (API Key, OAuth, JWT)
+- ✅ Rate limiting indépendant par API
+- ✅ Retry intelligent en cas d'erreur
+
+#### 2. **Cache intelligent**
+```python
+class SmartCache:
+    def get(self, key: str, max_age: int = 300) -> Optional[Any]:
+        """Récupère depuis le cache si pas trop ancien"""
+        pass
+    
+    def set(self, key: str, value: Any, ttl: int = 300):
+        """Met en cache avec expiration"""
+        pass
+```
+
+#### 3. **Parallélisation**
+```python
+import asyncio
+import aiohttp
+
+async def fetch_data_parallel(apis: List[str]) -> Dict:
+    """Récupère les données de toutes les APIs en parallèle"""
+    pass
+```
+
+#### 4. **Rapport HTML/Dashboard**
+```html
+<!-- Template de rapport à générer -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Multi-APIs</title>
+    <style>/* CSS pour un beau dashboard */</style>
+</head>
+<body>
+    <h1>📊 Tableau de Bord - {date}</h1>
+    
+    <section id="github">
+        <h2>🐙 GitHub Stats</h2>
+        <!-- Données GitHub -->
+    </section>
+    
+    <section id="weather">
+        <h2>🌤️ Météo</h2>
+        <!-- Données météo -->
+    </section>
+    
+    <section id="crypto">
+        <h2>₿ Crypto</h2>
+        <!-- Données crypto -->
+    </section>
+</body>
+</html>
+```
+
+### 🎯 Challenges supplémentaires
+
+#### **Niveau Débutant :**
+- Récupération basique des données
+- Affichage en console
+- Gestion d'erreurs simple
+
+#### **Niveau Intermédiaire :**
+- Cache avec expiration
+- Parallélisation avec `threading`
+- Export JSON/CSV
+- Configuration par fichier
+
+#### **Niveau Avancé :**
+- Async/await avec `aiohttp`
+- Dashboard HTML interactif
+- Webhooks pour notifications
+- Base de données pour historique
+- API REST pour exposer les données
+
+### 📝 Livrables attendus
+
+1. **Code source complet** avec classes organisées
+2. **Fichier de configuration** pour les APIs
+3. **Documentation** d'utilisation
+4. **Rapport HTML** généré
+5. **Tests unitaires** pour les fonctions critiques
+
+### 💡 Exemple de rapport généré
+
+```json
+{
+  "generated_at": "2024-01-15T10:30:00Z",
+  "apis_status": {
+    "github": {"status": "success", "response_time": 0.245},
+    "weather": {"status": "success", "response_time": 0.156},
+    "crypto": {"status": "failed", "error": "Rate limit exceeded"}
+  },
+  "data": {
+    "github": {
+      "total_repos": 25,
+      "total_stars": 1250,
+      "recent_commits": 15,
+      "top_languages": ["Python", "JavaScript", "Go"]
+    },
+    "weather": {
+      "paris": {"temp": 8, "condition": "cloudy"},
+      "london": {"temp": 5, "condition": "rainy"}
+    },
+    "crypto": {
+      "bitcoin": {"price": 42000, "change_24h": 2.5},
+      "ethereum": {"price": 2800, "change_24h": -1.2}
+    }
+  },
+  "insights": [
+    "📈 Portfolio crypto en hausse de 1.8%",
+    "🌧️ Temps pluvieux prévu à London",
+    "⭐ Nouveau repo avec 50+ stars sur GitHub"
+  ]
+}
+```
+
+### 🏆 Critères d'évaluation
+
+- **Architecture** (30%) : Code propre, classes bien organisées
+- **Fonctionnalités** (25%) : Toutes les APIs fonctionnent
+- **Gestion d'erreurs** (20%) : Robustesse du code  
+- **Performance** (15%) : Optimisations (cache, parallélisme)
+- **UI/Rapport** (10%) : Qualité du rendu final
+
+**Bonus :** Interface web avec Flask/FastAPI pour consulter les rapports en temps réel ! 🚀'''
+                }
+            )
 
         # Cours 4: Python Expert (renommé et réordonné)  
         cours_expert, created = Cours.objects.get_or_create(
